@@ -1,9 +1,9 @@
-import { readFileSync } from 'node:fs'
+import { defineGameHandler } from '~~/server/engine/store'
+import { getFile } from '~~/server/engine/files'
 import { Authorization, NotFound } from '~~/server/engine/errors'
 import { db } from '~~/server/engine/db'
 import { isAdmin, requireViewer } from '~~/server/engine/session'
-import { uploadPath } from '~~/server/engine/images'
-export default defineEventHandler(async (event) => {
+export default defineGameHandler(async (event) => {
   await requireViewer(event)
   const d = db(); const id = getRouterParam(event, 'id')
   const isHost = await isAdmin(event)
@@ -11,5 +11,5 @@ export default defineEventHandler(async (event) => {
   const deck = d.presentations.find(x => x.id === id)
   if (!deck) throw NotFound('Deck not found')
   setHeader(event, 'Content-Type', 'application/pdf')
-  return readFileSync(uploadPath(deck.pdfPath))
+  return getFile(deck.pdfPath)
 })

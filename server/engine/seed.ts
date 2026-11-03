@@ -83,5 +83,6 @@ export function buildSeed(): DB {
     prizes: PRIZES.map((p, i) => ({ id: id(), sortOrder: i + 1, name: p[0], tier: p[1], notes: p[2], isMidnight: false, status: 'pending' as const })),
     draws: [], presentations: [], log: [],
     codes: [], redemptions: [], statusEffects: [], teamPowerups: {}, unlocks: {}, bingoClaimed: [], attemptTimes: {}, lastScoringCode: {}, missedAttempts: 0,
+    rate: {}, busLight: {},
   }
 }

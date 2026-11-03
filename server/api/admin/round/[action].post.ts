@@ -1,9 +1,10 @@
+import { defineGameHandler } from '~~/server/engine/store'
 import { z } from 'zod'
 import { NotFound } from '~~/server/engine/errors'
 import { requireAdmin } from '~~/server/engine/session'
 import { assertVersion, envelope, parseBody } from '~~/server/engine/control'
 import { advance, lockRound, openRound, revealRound, skipRound } from '~~/server/engine/rounds'
-export default defineEventHandler(async (event) => {
+export default defineGameHandler(async (event) => {
   await requireAdmin(event)
   const b = await parseBody(event, z.object({ v: z.number().optional() }))
   assertVersion(b.v)

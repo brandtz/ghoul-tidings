@@ -1,3 +1,4 @@
+import { defineGameHandler } from '~~/server/engine/store'
 import { AVATAR_KEYS } from '~~/shared/catalog'
 import { z } from 'zod'
 import { Authorization, Conflict } from '~~/server/engine/errors'
@@ -10,8 +11,8 @@ const schema = z.object({
   email: z.string().trim().email('Enter your work email'),
   avatarKey: z.enum(AVATAR_KEYS as [string, ...string[]]),
 })
-export default defineEventHandler(async (event) => {
-  rateLimit(event, 'join', 10)
+export default defineGameHandler(async (event) => {
+  rateLimit(event, 'join', 120)
   const b = await parseBody(event, schema)
   const d = db()
   if (d.party.status === 'ended') throw Conflict("The party's over. Thanks for haunting!")

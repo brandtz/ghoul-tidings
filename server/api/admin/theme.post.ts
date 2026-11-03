@@ -1,9 +1,10 @@
+import { defineGameHandler } from '~~/server/engine/store'
 import { z } from 'zod'
 import { db, log } from '~~/server/engine/db'
 import { broadcast } from '~~/server/engine/bus'
 import { requireAdmin } from '~~/server/engine/session'
 import { envelope, parseBody } from '~~/server/engine/control'
-export default defineEventHandler(async (event) => {
+export default defineGameHandler(async (event) => {
   await requireAdmin(event)
   const { p } = await parseBody(event, z.object({ p: z.number().min(0).max(1).nullable() }))
   db().party.themeOverride = p

@@ -1,5 +1,6 @@
-// Local data store. Same shape as the planned Postgres tables, kept in memory
-// and flushed to .data/party.json. Replace this file with Drizzle queries in WP1.
+// The engine's data, kept in memory. With a database URL, server/engine/store.ts loads it
+// from Postgres before each request and saves the changed rows after. Without one, it is
+// flushed to .data/party.json for local runs and tests.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
@@ -73,33 +74,43 @@ export interface DB {
   codes: CodeRow[]; redemptions: CodeRedemption[]; statusEffects: StatusEffect[]
   teamPowerups: Record<string, string>; unlocks: Record<string, string[]>; bingoClaimed: string[]
   attemptTimes: Record<string, number[]>; lastScoringCode: Record<string, number>; missedAttempts: number
+  rate: Record<string, { minute: number; count: number }>; busLight: Record<string, number>
 }
 
 export const uid = () => randomUUID()
 const g = globalThis as any
 
+/** Fills fields that older saved data predates. */
+export function normalize(d: any): DB {
+  Object.assign(d, { codes: [], redemptions: [], statusEffects: [], teamPowerups: {}, unlocks: {}, bingoClaimed: [], attemptTimes: {}, lastScoringCode: {}, missedAttempts: 0, rate: {}, busLight: {}, ...d })
+  d.party.settings.caps = { ...DEFAULT_CAPS, ...d.party.settings.caps }
+  return d
+}
+
 export function db(): DB {
+  if (g.__gtPg) {
+    if (!g.__gtDb) throw new Error('The party data is not loaded yet')
+    return g.__gtDb
+  }
   if (!g.__gtDb) {
     mkdirSync(UPLOAD_DIR, { recursive: true })
-    g.__gtDb = existsSync(FILE) ? JSON.parse(readFileSync(FILE, 'utf8')) : buildSeed()
-    // Older data files predate Phase 2.
-    g.__gtDb = { codes: [], redemptions: [], statusEffects: [], teamPowerups: {}, unlocks: {}, bingoClaimed: [], attemptTimes: {}, lastScoringCode: {}, missedAttempts: 0, ...g.__gtDb }
-    g.__gtDb.party.settings.caps = { ...DEFAULT_CAPS, ...g.__gtDb.party.settings.caps }
+    g.__gtDb = normalize(existsSync(FILE) ? JSON.parse(readFileSync(FILE, 'utf8')) : buildSeed())
     if (!existsSync(FILE)) flush()
   }
   return g.__gtDb
 }
 
-function flush() { writeFileSync(FILE, JSON.stringify(g.__gtDb)) }
+function flush() { if (!g.__gtPg) writeFileSync(FILE, JSON.stringify(g.__gtDb)) }
 
 let timer: ReturnType<typeof setTimeout> | null = null
+/** File mode only. In database mode the request wrapper saves changed rows. */
 export function save() {
-  if (timer) return
+  if (g.__gtPg || timer) return
   timer = setTimeout(() => { timer = null; flush() }, 200)
 }
 
 export function resetDb() {
-  g.__gtDb = buildSeed()
+  g.__gtDb = normalize(buildSeed())
   flush()
   return g.__gtDb as DB
 }

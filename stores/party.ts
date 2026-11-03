@@ -1,6 +1,8 @@
-// Client live state. Holds the snapshot, syncs the clock, listens to the stream,
-// falls back to polling, and queues the one-shot moments (raffle beat, effects).
+// Client live state. Holds the snapshot, syncs the clock, listens for live updates
+// (signed Supabase Realtime broadcast, or the local stream), falls back to polling,
+// and queues the one-shot moments (raffle beat, effects).
 import { defineStore } from 'pinia'
+import { compactVerify, importJWK } from 'jose'
 import { computed, ref, shallowRef } from 'vue'
 import type { BusMessage, PublicSnapshot } from '~~/shared/types'
 
@@ -23,6 +25,8 @@ export const usePartyStore = defineStore('party', () => {
   const personalP = ref<number | null>(null)
   const jokeUntil = ref(0)
   let es: EventSource | null = null
+  let rt: { disconnect: () => void } | null = null
+  const seen = new Set<string>()
   let pollTimer: ReturnType<typeof setInterval> | null = null
   let beatTimer: ReturnType<typeof setInterval> | null = null
   let syncTimer: ReturnType<typeof setInterval> | null = null
@@ -92,15 +96,61 @@ export const usePartyStore = defineStore('party', () => {
     setTimeout(refresh, Math.random() * 250)
   }
 
-  function startPolling() {
-    if (pollTimer) return
-    pollTimer = setInterval(refresh, 3000)
+  let pollMs = 0
+  function startPolling(ms = 3000) {
+    if (pollTimer && pollMs === ms) return
+    stopPolling()
+    pollMs = ms
+    pollTimer = setInterval(refresh, ms)
   }
   function stopPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null } }
 
+  // Light updates are thinned on the server, so a slow poll keeps counts honest
+  // even while the live channel is up.
+  const SLOW_POLL = 12000
+  function liveUp() { connected.value = true; downSince = 0; startPolling(SLOW_POLL); refresh() }
+  function liveDown() {
+    if (!downSince) downSince = Date.now()
+    startPolling()
+    setTimeout(() => { if (downSince && Date.now() - downSince >= 3000) connected.value = false }, 3100)
+  }
+
+  async function connectRealtime(url: string, apikey: string, jwk: string | object) {
+    const key = typeof jwk === 'string' ? JSON.parse(jwk) : jwk
+    const [{ RealtimeClient }, pub] = await Promise.all([import('@supabase/realtime-js'), importJWK(key, 'ES256')])
+    const client = new RealtimeClient(`${url.replace(/^http/, 'ws')}/realtime/v1`, { params: { apikey } })
+    rt = client
+    client.channel('gt-party').on('broadcast', { event: 'm' }, async ({ payload }: any) => {
+      try {
+        const { payload: bytes } = await compactVerify(payload.jws, pub)
+        const m = JSON.parse(new TextDecoder().decode(bytes)) as BusMessage & { exp: number }
+        if (m.exp < now() || seen.has(m.id)) return
+        seen.add(m.id)
+        if (seen.size > 500) seen.delete(seen.values().next().value!)
+        onMessage(m)
+      } catch { /* unsigned or forged */ }
+    }).subscribe((status: string) => { if (status === 'SUBSCRIBED') liveUp(); else liveDown() })
+  }
+
   function connect(opts: { heartbeat?: boolean } = {}) {
-    if (es) return
+    if (es || rt) return
     syncClock(); refresh()
+    const pub = useRuntimeConfig().public
+    if (pub.supabaseUrl && pub.supabasePublishableKey && pub.broadcastPublicKey) {
+      liveDown()
+      connectRealtime(pub.supabaseUrl, pub.supabasePublishableKey, pub.broadcastPublicKey).catch(() => liveDown())
+    } else connectStream()
+    syncTimer = setInterval(syncClock, 5 * 60000)
+    if (opts.heartbeat) {
+      const beat = () => { if (snap.value?.me) $fetch('/api/heartbeat', { method: 'POST' }).catch(() => {}) }
+      setTimeout(beat, 1500)
+      beatTimer = setInterval(beat, 30000)
+    }
+    window.addEventListener('focus', refresh)
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh() })
+  }
+
+  function connectStream() {
     es = new EventSource('/api/stream')
     es.onopen = () => { connected.value = true; downSince = 0; stopPolling(); refresh() }
     es.onmessage = (e) => { try { onMessage(JSON.parse(e.data)) } catch { /* dropped */ } }
@@ -110,18 +160,11 @@ export const usePartyStore = defineStore('party', () => {
       if (Date.now() - downSince > 10000) startPolling()
       else setTimeout(() => { if (downSince && es?.readyState !== 1) { connected.value = false; startPolling() } }, 10000)
     }
-    syncTimer = setInterval(syncClock, 5 * 60000)
-    if (opts.heartbeat) {
-      const beat = () => { if (snap.value?.me) $fetch('/api/heartbeat', { method: 'POST' }).catch(() => {}) }
-      setTimeout(beat, 1500)
-      beatTimer = setInterval(beat, 20000)
-    }
-    window.addEventListener('focus', refresh)
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh() })
   }
 
   function disconnect() {
     es?.close(); es = null
+    rt?.disconnect(); rt = null
     stopPolling()
     if (beatTimer) clearInterval(beatTimer)
     if (syncTimer) clearInterval(syncTimer)

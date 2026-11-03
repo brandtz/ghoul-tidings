@@ -20,7 +20,12 @@ export default defineNuxtConfig({
     adminPasscode: 'ghoul-tidings-dev-passcode-1234',
     emailPepper: 'dev-email-pepper-change-me',
     jwtSecret: 'dev-jwt-secret-change-me-please-32-chars',
-    public: { joinUrl: 'http://localhost:3000' },
+    // Each key is overridden by its NUXT_ variable, for example NUXT_SUPABASE_SECRET_KEY.
+    supabaseSecretKey: '',
+    databaseUrl: '',
+    databaseMigrationUrl: '',
+    broadcastPrivateKey: '',
+    public: { joinUrl: 'http://localhost:3000', supabaseUrl: '', supabasePublishableKey: '', broadcastPublicKey: '' },
   },
   vite: { build: { target: 'es2022' }, optimizeDeps: { include: ['qrcode'] } },
 })

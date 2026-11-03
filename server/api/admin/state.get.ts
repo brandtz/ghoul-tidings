@@ -1,3 +1,4 @@
+import { defineGameHandler } from '~~/server/engine/store'
 import { requireAdmin } from '~~/server/engine/session'
 import { adminState } from '~~/server/engine/adminState'
-export default defineEventHandler(async (event) => { await requireAdmin(event); return adminState() })
+export default defineGameHandler(async (event) => { await requireAdmin(event); return adminState() })

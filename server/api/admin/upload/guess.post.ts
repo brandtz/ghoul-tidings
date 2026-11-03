@@ -1,10 +1,11 @@
+import { defineGameHandler } from '~~/server/engine/store'
 import { Validation } from '~~/server/engine/errors'
 import { db, uid } from '~~/server/engine/db'
 import { broadcast } from '~~/server/engine/bus'
 import { requireAdmin } from '~~/server/engine/session'
 import { envelope } from '~~/server/engine/control'
 import { cutCrops } from '~~/server/engine/images'
-export default defineEventHandler(async (event) => {
+export default defineGameHandler(async (event) => {
   await requireAdmin(event)
   const parts = await readMultipartFormData(event)
   const f = (n: string) => parts?.find(p => p.name === n)

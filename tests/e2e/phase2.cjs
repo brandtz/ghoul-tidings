@@ -20,7 +20,7 @@ const type = async (p, s) => { await p.locator('body').click({ position: { x: 5,
   }
   const host = await mk('host')
   await host.goto(B + '/admin/login'); await wait(1500)
-  await host.fill('input[type=password]', 'ghoul-tidings-dev-passcode-1234')
+  await host.fill('input[type=password]', process.env.GT_PASSCODE || 'ghoul-tidings-dev-passcode-1234')
   await host.click('button:has-text("Sign in")'); await wait(1500)
   await api(host, '/api/admin/party/reset'); await wait(2500)
   const adm = () => host.evaluate(() => fetch('/api/admin/state').then(r => r.json()))

@@ -1,17 +1,15 @@
 // Guess the Thing image pipeline: sharp cuts six crops, tight to full, around the focal point.
-import { existsSync, writeFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import sharp from 'sharp'
-import { UPLOAD_DIR, db, save, uid, type GuessItem } from './db'
+import { db, save, uid, type GuessItem } from './db'
 import { loadLocalCatalog } from './codes'
-
-export const uploadPath = (name: string) => resolve(UPLOAD_DIR, name)
+import { hasFile, putFile } from './files'
 
 export async function cutCrops(input: Buffer, focalX: number, focalY: number) {
   const img = sharp(input).rotate()
   const meta = await img.metadata()
   const W = meta.width!; const H = meta.height!
   const paths: string[] = []
+  const uploads: Promise<void>[] = []
   for (let i = 0; i < 6; i++) {
     const frac = 0.12 + ((1 - 0.12) * i) / 5
     const w = Math.max(16, Math.round(W * frac))
@@ -19,11 +17,13 @@ export async function cutCrops(input: Buffer, focalX: number, focalY: number) {
     const left = Math.max(0, Math.min(W - w, Math.round(W * focalX - w / 2)))
     const top = Math.max(0, Math.min(H - h, Math.round(H * focalY - h / 2)))
     const name = `${uid()}.jpg`
-    await sharp(input).rotate().extract({ left, top, width: w, height: h }).resize(1280).jpeg({ quality: 82 }).toFile(uploadPath(name))
+    const out = await sharp(input).rotate().extract({ left, top, width: w, height: h }).resize(1280).jpeg({ quality: 82 }).toBuffer()
+    uploads.push(putFile(name, out, 'image/jpeg'))
     paths.push(name)
   }
   const full = `${uid()}.jpg`
-  await sharp(input).rotate().resize({ width: 1280, withoutEnlargement: true }).jpeg({ quality: 85 }).toFile(uploadPath(full))
+  uploads.push(putFile(full, await sharp(input).rotate().resize({ width: 1280, withoutEnlargement: true }).jpeg({ quality: 85 }).toBuffer(), 'image/jpeg'))
+  await Promise.all(uploads)
   return { cropPaths: paths, fullPath: full }
 }
 
@@ -41,20 +41,19 @@ const ART: Record<string, string> = {
 
 export async function ensureSeedImages() {
   const d = db()
-  for (const g of d.guess as (GuessItem & { seedArt?: string })[]) {
-    if (g.fullPath && existsSync(uploadPath(g.fullPath))) continue
+  await Promise.all([...(d.guess as (GuessItem & { seedArt?: string })[]).map(async (g) => {
+    if (g.fullPath && await hasFile(g.fullPath)) return
     const art = ART[g.seedArt ?? '']
-    if (!art) continue
+    if (!art) return
     const png = await sharp(Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">${art}</svg>`)).png().toBuffer()
     Object.assign(g, await cutCrops(png, g.focalX, g.focalY))
-  }
-  if (!d.presentations.length) seedDeck()
+  }), d.presentations.length ? null : seedDeck()])
   loadLocalCatalog()
   save()
 }
 
 // A tiny hand-rolled PDF so presentation mode works before a real deck is uploaded.
-function seedDeck() {
+async function seedDeck() {
   const pages = [
     ['Thanks for showing up', 'for each other'], ['Team shout-outs', 'Add your recognition slides here'],
     ['Milestones', 'Replace this deck in the Presentation section'], ['Happy holidays', 'Back to the games'],
@@ -77,6 +76,6 @@ function seedDeck() {
   for (let n = 1; n < objs.length; n++) out += `${String(offsets[n]).padStart(10, '0')} 00000 n \n`
   out += `trailer\n<< /Size ${objs.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`
   const name = `${uid()}.pdf`
-  writeFileSync(uploadPath(name), out, 'latin1')
+  await putFile(name, Buffer.from(out, 'latin1'), 'application/pdf')
   db().presentations.push({ id: uid(), title: 'Recognition slides', pdfPath: name, pageCount: pages.length })
 }

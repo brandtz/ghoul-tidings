@@ -50,12 +50,14 @@ export async function requirePlayer(event: H3Event) {
   return p
 }
 
-const buckets = new Map<string, { minute: number; count: number }>()
+/** Per IP, per minute. Kept with the party data so every server instance shares it. */
 export function rateLimit(event: H3Event, action: string, perMinute: number) {
+  const buckets = db().rate
   const key = `${action}:${getRequestIP(event, { xForwardedFor: true }) ?? 'local'}`
   const minute = Math.floor(Date.now() / 60000)
-  const b = buckets.get(key)
-  if (!b || b.minute !== minute) { buckets.set(key, { minute, count: 1 }); return }
+  for (const k in buckets) if (buckets[k]!.minute < minute - 1) delete buckets[k]
+  const b = buckets[key]
+  if (!b || b.minute !== minute) { buckets[key] = { minute, count: 1 }; return }
   if (++b.count > perMinute) throw Conflict('Too many tries. Wait a minute and try again.')
 }
 

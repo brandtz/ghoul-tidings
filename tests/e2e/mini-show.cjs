@@ -18,7 +18,7 @@ const api = (p, url, body = {}) => p.evaluate(async ([u, b]) => { const r = awai
   }
   const host = await mk('host')
   await host.goto(B + '/admin/login'); await wait(1500)
-  await host.fill('input[type=password]', 'ghoul-tidings-dev-passcode-1234')
+  await host.fill('input[type=password]', process.env.GT_PASSCODE || 'ghoul-tidings-dev-passcode-1234')
   await host.click('button:has-text("Sign in")'); await wait(1500)
   await api(host, '/api/admin/party/reset'); await wait(2500)
   await host.goto(B + '/admin/run-of-show'); await wait(1800)

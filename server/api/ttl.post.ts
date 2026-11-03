@@ -1,3 +1,4 @@
+import { defineGameHandler } from '~~/server/engine/store'
 import { z } from 'zod'
 import { Conflict } from '~~/server/engine/errors'
 import { db, log, uid } from '~~/server/engine/db'
@@ -5,7 +6,7 @@ import { broadcast } from '~~/server/engine/bus'
 import { requirePlayer } from '~~/server/engine/session'
 import { envelope, parseBody } from '~~/server/engine/control'
 const schema = z.object({ statements: z.array(z.string().trim().min(1, 'Fill in all three statements').max(120)).length(3), lieIndex: z.number().int().min(0).max(2) })
-export default defineEventHandler(async (event) => {
+export default defineGameHandler(async (event) => {
   const p = await requirePlayer(event)
   const b = await parseBody(event, schema)
   const d = db(); const now = Date.now(); const s = d.party.settings

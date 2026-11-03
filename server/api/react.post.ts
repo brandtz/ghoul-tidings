@@ -1,10 +1,11 @@
+import { defineGameHandler } from '~~/server/engine/store'
 import { z } from 'zod'
 import { db } from '~~/server/engine/db'
 import { broadcast } from '~~/server/engine/bus'
 import { requirePlayer } from '~~/server/engine/session'
 import { envelope, parseBody } from '~~/server/engine/control'
 const schema = z.object({ counts: z.record(z.string(), z.number().int().min(0).max(10)) })
-export default defineEventHandler(async (event) => {
+export default defineGameHandler(async (event) => {
   await requirePlayer(event)
   const { counts } = await parseBody(event, schema)
   const total = Math.min(10, Object.values(counts).reduce((a, b) => a + b, 0))
