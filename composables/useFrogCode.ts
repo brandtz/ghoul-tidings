@@ -9,7 +9,7 @@ export function useFrogCode() {
   let buf = ''
 
   function onKey(e: KeyboardEvent) {
-    if (e.key.length !== 1 || !/[a-z]/i.test(e.key)) return
+    if (store.legendaryOpen || e.key.length !== 1 || !/[a-z]/i.test(e.key)) return
     buf = (buf + e.key.toLowerCase()).slice(-FROG.phrase.length)
     if (buf !== FROG.phrase) return
     buf = ''

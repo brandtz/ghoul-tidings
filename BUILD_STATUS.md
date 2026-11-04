@@ -22,7 +22,7 @@ Decisions taken without asking:
 
 Left out:
 
-- **Legendary reward:** not built. It needs the Doom shareware files and a js-dos embed, and it is first in the plan's cut order.
+- **Legendary reward:** built. A secret code (in the local catalog) unlocks the Doom v1.9 shareware, running in js-dos, while the host's Legendary switch under Content, Codes is on. The bundle lives in `server/assets/legendary` and is served only to unlocked players. Desktop only; phones get a note. See that folder's README for where the files came from.
 - **Secret avatars:** not built. The UX spec marks them optional, and the app has no change-avatar screen yet.
 
 Verification: 26 unit tests, a clean type check, and multi-browser runs on a production build, including all three team power-ups. A frozen team gains nothing, so a Sugar Rush cannot copy from it. Phase 2 has not been tried on a phone.

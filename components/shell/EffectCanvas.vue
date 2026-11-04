@@ -58,7 +58,7 @@ watch(() => store.effect, (e) => {
   if (!e) return
   const def = EFFECTS[e.key]
   if (!def) return
-  playEffectSound(e.key, progress.value)
+  if (!store.legendaryOpen) playEffectSound(e.key, progress.value)
   if (def.layer === 'banner') {
     banner.value = null
     requestAnimationFrame(() => { banner.value = { text: e.text ?? '', jolly: progress.value >= 0.5 } })

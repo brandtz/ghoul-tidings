@@ -43,7 +43,7 @@ export interface Me {
   ttl: { statements: string[]; lieIndex: number; status: string } | null
   offer: { drawId: string; prizeName: string; tier: PrizeTier; deadline: number } | null
   powerup: string | null
-  unlocks: { bag: boolean; console: boolean; bingo: boolean }
+  unlocks: { bag: boolean; console: boolean; bingo: boolean; legendary: boolean }
   bingoClaimed: boolean
 }
 

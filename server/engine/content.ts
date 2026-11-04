@@ -118,7 +118,7 @@ export const CONTENT: Record<string, Record<string, Handler>> = {
       Object.assign(p.settings, rest)
       if (points) Object.assign(p.settings.points, points)
       if (caps) Object.assign(p.settings.caps, caps)
-      if (s.flags) Object.assign(p.settings.flags, s.flags, { legendary: false })
+      if (s.flags) Object.assign(p.settings.flags, s.flags)
     },
   },
   players: {

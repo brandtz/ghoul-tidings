@@ -6,3 +6,6 @@ node_modules
 catalog/*.local.json
 .env.*
 !.env.example
+
+# Copied from node_modules on install
+public/js-dos

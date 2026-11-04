@@ -14,6 +14,8 @@ export const usePartyStore = defineStore('party', () => {
   const connected = ref(true)
   const sessionError = ref<string | null>(null)
   const frogUnlocked = ref(false)
+  // True while Doom has the keyboard; party key listeners and effect sounds stand down.
+  const legendaryOpen = ref(false)
   const offset = ref(0)
   const moment = shallowRef<RaffleMoment | null>(null)
   const momentKey = ref(0)
@@ -175,7 +177,7 @@ export const usePartyStore = defineStore('party', () => {
    *  joining again with the same email picks up the same score, team and ghoul. */
   async function signOut() {
     await $fetch('/api/leave', { method: 'POST' }).catch(() => {})
-    personalP.value = null; jokeUntil.value = 0; frogUnlocked.value = false; toasts.value = []
+    personalP.value = null; jokeUntil.value = 0; frogUnlocked.value = false; legendaryOpen.value = false; toasts.value = []
     sessionError.value = null
     await refresh()
   }
@@ -198,5 +200,5 @@ export const usePartyStore = defineStore('party', () => {
     }
   }
 
-  return { signOut, frogUnlocked, ticker, personalP, jokeUntil, snap, connected, sessionError, offset, moment, momentKey, effect, reaction, toasts, answered, calm, me, now, refresh, connect, disconnect, toast, fireEffect, act }
+  return { legendaryOpen, signOut, frogUnlocked, ticker, personalP, jokeUntil, snap, connected, sessionError, offset, moment, momentKey, effect, reaction, toasts, answered, calm, me, now, refresh, connect, disconnect, toast, fireEffect, act }
 })

@@ -79,6 +79,7 @@ export function redeem(player: Player, tail: string) {
     return { outcome: 'duplicate', effects: [{ key: 'none', scope: 'personal', toast: 'Already in your bag.' }] }
   }
   const reward = REWARDS[code.rewardKey]!
+  if (reward.unlock === 'legendary' && !flags.legendary) return nothing
   const scoring = code.scope === 'team' || !!reward.team
   if (scoring && now - (d.lastScoringCode[player.id] ?? 0) < COOLDOWN_MS) return { outcome: 'cooldown', effects: [{ key: 'none', scope: 'personal', toast: 'Your candy bucket needs a moment.' }] }
 

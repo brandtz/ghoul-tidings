@@ -71,7 +71,7 @@ function buildMe(p: Player, ranks: ReturnType<typeof board>, totals: Map<string,
     ttl: t ? { statements: t.statements, lieIndex: t.lieIndex, status: t.status } : null,
     offer: offer && prize ? { drawId: offer.id, prizeName: prize.name, tier: prize.tier, deadline: offer.claimDeadline } : null,
     powerup: p.teamId ? d.teamPowerups[p.teamId] ?? null : null,
-    unlocks: { bag: hasUnlock(p.id, 'bag'), console: hasUnlock(p.id, 'console'), bingo: hasUnlock(p.id, 'bingo') },
+    unlocks: { bag: hasUnlock(p.id, 'bag'), console: hasUnlock(p.id, 'console'), bingo: hasUnlock(p.id, 'bingo'), legendary: !!d.party.settings.flags.legendary && hasUnlock(p.id, 'legendary') },
     bingoClaimed: d.bingoClaimed.includes(p.id),
   }
 }

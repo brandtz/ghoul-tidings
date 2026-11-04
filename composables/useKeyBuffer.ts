@@ -11,7 +11,7 @@ export function useKeyBuffer() {
 
   function onKey(e: KeyboardEvent) {
     const s = store.snap
-    if (!s?.me || !(s.flags.eggs || s.hintRevealed)) return
+    if (!s?.me || !(s.flags.eggs || s.hintRevealed) || store.legendaryOpen) return
     const t = e.target as HTMLElement
     if (t?.closest?.('input,textarea,select,[contenteditable],[role=dialog]')) return
     const tok = TOKENS[e.key] ?? (e.key.length === 1 ? e.key.toUpperCase() : '')

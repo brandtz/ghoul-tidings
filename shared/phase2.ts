@@ -8,7 +8,7 @@ export interface Reward {
   individual?: number
   effect?: string
   theme?: number
-  unlock?: 'bag' | 'console' | 'bingo'
+  unlock?: 'bag' | 'console' | 'bingo' | 'legendary'
   egg?: boolean
   joke?: boolean
   toast: string
@@ -27,6 +27,8 @@ export const REWARDS: Record<string, Reward> = {
   unlock_bag: { kind: 'treat', unlock: 'bag', effect: 'confetti', toast: 'You found the Trick-or-Treat Bag!' },
   unlock_console: { kind: 'neutral', unlock: 'console', toast: 'Something woke up. Press ~ to talk to it.' },
   unlock_bingo: { kind: 'neutral', unlock: 'bingo', toast: 'A bingo card slid out of the bag.' },
+  // Boots the Doom shareware. Works only while the host's Legendary switch is on.
+  legendary: { kind: 'treat', unlock: 'legendary', effect: 'lightning', toast: 'Legendary! Something ancient is booting up…' },
   joke_million: { kind: 'neutral', joke: true, effect: 'confetti', toast: '+1,000,000! Surely nothing will go wrong.' },
 }
 

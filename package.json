@@ -7,7 +7,7 @@
     "dev": "nuxt dev --dotenv .env.local",
     "build": "nuxt build",
     "start": "node .output/server/index.mjs",
-    "postinstall": "nuxt prepare",
+    "postinstall": "node scripts/copy-jsdos.mjs && nuxt prepare",
     "test": "vitest run",
     "typecheck": "nuxt typecheck"
   },
@@ -15,6 +15,7 @@
     "@pinia/nuxt": "^1.0.3",
     "@supabase/realtime-js": "^2.118.0",
     "jose": "^6.2.14",
+    "js-dos": "8.5.3",
     "nuxt": "^3.21.11",
     "pdfjs-dist": "^6.4.299",
     "pinia": "^4.1.0",

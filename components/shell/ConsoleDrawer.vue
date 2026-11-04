@@ -15,6 +15,7 @@ async function toggle() {
   if (open.value) { await nextTick(); input.value?.focus() }
 }
 function onKey(e: KeyboardEvent) {
+  if (store.legendaryOpen) return
   if (e.key === 'Escape' && open.value) { open.value = false; return }
   if (e.key !== '~' && e.key !== '`') return
   const t = e.target as HTMLElement

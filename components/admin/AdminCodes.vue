@@ -6,7 +6,7 @@ const admin = useAdminStore()
 const s = computed(() => admin.a)
 const json = ref(''); const show = ref(false)
 const flags = computed(() => s.value.party.settings.flags)
-const FLAGS: [string, string][] = [['eggs', 'Trick-or-treat codes'], ['cheatSheet', 'Trick-or-Treat Bag'], ['powerups', 'Power-ups'], ['eggHunt', 'Egg hunt board'], ['bingo', 'Meeting bingo']]
+const FLAGS: [string, string][] = [['eggs', 'Trick-or-treat codes'], ['cheatSheet', 'Trick-or-Treat Bag'], ['powerups', 'Power-ups'], ['eggHunt', 'Egg hunt board'], ['bingo', 'Meeting bingo'], ['legendary', 'Legendary (Doom)']]
 const set = (k: string, v: boolean) => admin.content('settings', 'save', { flags: { [k]: v } })
 const importIt = async () => { const r = await admin.content('codes', 'import', { json: json.value }); if (r) { admin.flash(`Imported ${r.data.imported} codes`); json.value = ''; show.value = false } }
 const toggle = (c: any) => admin.content('codes', 'toggle', { id: c.id, enabled: !c.enabled })

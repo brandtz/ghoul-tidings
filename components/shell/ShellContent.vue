@@ -12,6 +12,9 @@ const showTtl = ref(false)
 const showReact = ref(false)
 const showBag = ref(false)
 const showBingo = ref(false)
+const showLegendary = ref(false)
+// Opens by itself the moment the code lands, not on later reloads. The host switch closes it.
+watch(() => store.me?.unlocks.legendary, (on, was) => { if (on && was === false) showLegendary.value = true })
 const personal = computed(() => !props.stage && !props.thumb)
 const hasSeat = computed(() => !!store.me)
 
@@ -37,6 +40,7 @@ watch(() => store.effect, (e) => { if (e?.key === 'lightning') beat() })
     <TruthsCard @open="showTtl = true" />
     <CodesHintCard @open="showHint = true" />
     <PowerUpCard />
+    <LegendaryCard @open="showLegendary = true" />
   </aside>
   <aside class="rail rail-right" aria-label="Raffle">
     <RaffleCountdownCard />
@@ -80,4 +84,5 @@ watch(() => store.effect, (e) => { if (e?.key === 'lightning') beat() })
   <BingoModal v-if="showBingo" @close="showBingo = false" />
   <TtlDialog v-if="showTtl" @close="showTtl = false" />
   <LeaderboardDrawer v-if="showBoard" @close="showBoard = false" />
+  <LegendaryModal v-if="personal && showLegendary && store.me?.unlocks.legendary" @close="showLegendary = false" />
 </template>
