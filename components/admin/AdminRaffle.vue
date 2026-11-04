@@ -33,6 +33,13 @@ const setLength = (e: Event) => admin.content('settings', 'save', { durationMin:
 const setRepeat = (e: Event) => admin.content('settings', 'save', { noRepeatWinners: (e.target as HTMLInputElement).checked })
 const canDraw = (p: any) => p.status === 'pending'
 const offered = (p: any) => p.draw?.status === 'offered' || p.draw?.status === 'expired'
+const editing = ref<any>(null)
+const openEdit = (p: any) => { editing.value = { id: p.id, name: p.name, tier: p.tier, notes: p.notes ?? '' } }
+const saveEdit = async () => {
+  const e = editing.value; const p = s.value.prizes.find((x: any) => x.id === e.id)
+  if (!e.name.trim() || !p) return
+  if (await save(p, { name: e.name.trim(), tier: e.tier, notes: e.notes.trim() })) editing.value = null
+}
 const remove = async (p: any) => { if (await admin.confirm(`Delete ${p.name}?`, 'Delete')) admin.content('prizes', 'delete', { id: p.id }) }
 </script>
 
@@ -71,19 +78,20 @@ const remove = async (p: any) => { if (await admin.confirm(`Delete ${p.name}?`, 
   </section>
 
   <section aria-label="Prizes" class="bg-a-panel rounded-[14px] flex flex-col gap-1.5" style="padding:12px 14px">
-    <div class="grid gap-2.5 text-[13px] font-extrabold text-a-muted uppercase" style="grid-template-columns:52px 26px 1.7fr 92px .9fr 58px 84px 132px 236px;padding:0 10px 4px;letter-spacing:.06em">
+    <div class="grid gap-2.5 text-[13px] font-extrabold text-a-muted uppercase" style="grid-template-columns:52px 26px 1.7fr 92px .9fr 58px 84px 132px 300px;padding:0 10px 4px;letter-spacing:.06em">
       <span /><span>#</span><span>Prize</span><span>Tier</span><span>Notes</span><span>Due</span><span>Beat</span><span>Status</span><span>Actions</span>
     </div>
-    <div v-for="(p, i) in s.prizes" :key="p.id" class="grid gap-2.5 items-center rounded-[10px] box-border" style="grid-template-columns:52px 26px 1.7fr 92px .9fr 58px 84px 132px 236px;min-height:56px;padding:0 10px" :style="{ background: p.draw?.status === 'offered' ? '#1F232C' : 'transparent', border: `2px solid ${p.draw?.status === 'offered' ? '#FF7A1A' : 'transparent'}` }">
+    <div v-for="(p, i) in s.prizes" :key="p.id" class="grid gap-2.5 items-center rounded-[10px] box-border" style="grid-template-columns:52px 26px 1.7fr 92px .9fr 58px 84px 132px 300px;min-height:56px;padding:0 10px" :style="{ background: p.draw?.status === 'offered' ? '#1F232C' : 'transparent', border: `2px solid ${p.draw?.status === 'offered' ? '#FF7A1A' : 'transparent'}` }">
       <span class="flex"><button class="bg-transparent border-0 text-a-muted" style="width:26px;height:40px" :aria-label="`Move ${p.name} up`" @click="move(i, -1)">↑</button><button class="bg-transparent border-0 text-a-muted" style="width:26px;height:40px" :aria-label="`Move ${p.name} down`" @click="move(i, 1)">↓</button></span>
       <span class="text-base font-extrabold text-a-muted">{{ i + 1 }}</span>
-      <input class="a-input" :value="p.name" :aria-label="`Prize ${i + 1} name`" style="border-color:transparent;background:transparent;padding:0 4px" @change="save(p, { name: ($event.target as HTMLInputElement).value })">
-      <select class="a-input" :value="p.tier" :aria-label="`Prize ${i + 1} tier`" style="min-height:36px;padding:0 6px;font-size:13px;font-weight:800" :style="{ background: tiers[p.tier]![0], color: tiers[p.tier]![1], borderColor: 'transparent' }" @change="save(p, { tier: ($event.target as HTMLSelectElement).value })"><option value="swag">Swag</option><option value="special">Special</option><option value="grand">Grand</option></select>
-      <input class="a-input" :value="p.notes" placeholder="—" :aria-label="`Prize ${i + 1} notes`" style="border-color:transparent;background:transparent;padding:0 4px;font-size:14px;color:#9AA3B2" @change="save(p, { notes: ($event.target as HTMLInputElement).value })">
+      <span class="text-base font-extrabold truncate">{{ p.name }}</span>
+      <span class="a-chip" :style="{ background: tiers[p.tier]![0], color: tiers[p.tier]![1] }">{{ tiers[p.tier]![2] }}</span>
+      <span class="text-sm font-semibold truncate" style="color:#9AA3B2">{{ p.notes || '—' }}</span>
       <span class="text-base font-extrabold">{{ fmtM(dueMin(i + 1)) }}</span>
       <span class="text-sm font-bold" :style="{ color: p.isMidnightDraw ? '#FFB36B' : '#C4CAD6' }">{{ p.isMidnightDraw ? 'Midnight' : 'Lightning' }}</span>
       <span class="a-chip truncate" style="max-width:100%" :style="{ background: status(p)[0], color: status(p)[1] }">{{ status(p)[2] }}</span>
       <div class="flex gap-1.5 justify-end">
+        <button class="a-btn" style="min-height:40px;padding:0 12px;font-size:14px;background:#1F232C" :aria-label="`Edit ${p.name}`" @click="openEdit(p)">Edit</button>
         <template v-if="canDraw(p)">
           <button class="a-btn" style="min-height:40px;padding:0 12px;font-size:14px;font-weight:800" :disabled="s.party.status !== 'live'" @click="run(p, 'draw')">Draw now</button>
           <button class="a-btn" style="min-height:40px;padding:0 12px;font-size:14px;background:#1F232C" @click="run(p, 'skip')">Skip</button>
@@ -94,6 +102,12 @@ const remove = async (p: any) => { if (await admin.confirm(`Delete ${p.name}?`, 
           <button class="a-btn primary" style="min-height:40px;padding:0 12px;font-size:14px" @click="run(p, 'mark-claimed')">Mark claimed</button>
         </template>
       </div>
+      <form v-if="editing?.id === p.id" class="flex gap-2 items-end" style="grid-column:1 / -1;padding:6px 0 10px 88px" @submit.prevent="saveEdit">
+        <label class="flex flex-col gap-1 text-[13px] font-bold text-a-muted" style="flex:2">Prize name<input v-model="editing.name" class="a-input" required maxlength="80"></label>
+        <label class="flex flex-col gap-1 text-[13px] font-bold text-a-muted">Tier<select v-model="editing.tier" class="a-input"><option value="swag">Swag</option><option value="special">Special</option><option value="grand">Grand</option></select></label>
+        <label class="flex flex-col gap-1 text-[13px] font-bold text-a-muted" style="flex:1.5">Notes<input v-model="editing.notes" class="a-input" placeholder="Optional, host only" maxlength="120"></label>
+        <button class="a-btn primary">Save</button><button type="button" class="a-btn" @click="editing = null">Cancel</button>
+      </form>
     </div>
   </section>
 </template>

@@ -54,6 +54,7 @@ watch(() => store.effect, (e) => { if (e?.key === 'lightning') beat() })
 
   <EffectCanvas v-if="!thumb" :stage="stage" />
   <Toasts v-if="personal" />
+  <MuteButton v-if="!thumb" />
   <SystemBanner v-if="!thumb" />
   <Ticker v-if="!thumb" />
   <ConsoleDrawer v-if="personal && store.me?.unlocks.console" />

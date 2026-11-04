@@ -10,7 +10,7 @@ button:disabled { cursor: not-allowed; }
 .gt-root { position: fixed; inset: 0; overflow: hidden; background: #05040a; font-family: 'Nunito', system-ui, sans-serif; color: var(--text); }
 .gt-stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; overflow: hidden; background: #080914; }
 .cinzel { font-family: 'Cinzel', serif; }
-.sr { position: absolute; left: -9999px; }
+.sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; padding: 0; }
 
 .game-frame {
   position: absolute; left: 440px; top: 96px; width: 1040px; height: 720px; box-sizing: border-box;
@@ -38,8 +38,8 @@ button:disabled { cursor: not-allowed; }
 
 .score-pill {
   position: absolute; left: 660px; top: 834px; width: 600px; box-sizing: border-box; min-height: 52px;
-  display: flex; align-items: center; gap: 16px; background: var(--panelFill); border: 3px solid var(--border);
-  border-radius: 999px; padding: 0 10px 0 24px; box-shadow: 0 6px 24px #000000AA;
+  display: flex; align-items: center; gap: 12px; background: var(--panelFill); border: 3px solid var(--border);
+  border-radius: 999px; padding: 0 10px 0 8px; box-shadow: 0 6px 24px #000000AA;
 }
 .side-btn { position: absolute; top: 834px; width: 52px; height: 52px; border-radius: 50%; border: 3px solid var(--border); background: var(--panelFill); color: var(--text); font-size: 24px; display: flex; align-items: center; justify-content: center; padding: 0; box-shadow: 0 6px 24px #000000AA; }
 .side-btn[aria-pressed=true] { background: var(--border); color: #140A05; }
@@ -67,6 +67,10 @@ button:disabled { cursor: not-allowed; }
 .badge { width: 52px; height: 52px; flex: none; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 900; }
 .field { min-height: 52px; box-sizing: border-box; width: 100%; border-radius: 12px; border: 2px solid #4A4670; background: #0B0A1A; color: #F3EEF9; font: 700 20px 'Nunito', sans-serif; padding: 0 16px; }
 .field:focus { border-color: var(--border2); outline: none; box-shadow: 0 0 0 2px var(--border2); }
+.pick { position: relative; border: 3px solid #34375E; border-radius: 14px; padding: 8px 4px; text-align: center; cursor: pointer; background: #15172F; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 14px; font-weight: 800; line-height: 1.1; min-height: 102px; box-sizing: border-box; color: #B9B6D6; transition: transform .12s, border-color .12s; }
+.pick.on { border-color: var(--border2); background: #2C1F52; color: #F3EEF9; box-shadow: 0 0 0 2px var(--border2), 0 0 18px var(--glow); transform: scale(1.04); }
+.pick:has(:focus-visible) { outline: 3px solid #fff; outline-offset: 3px; }
+.pick-check { position: absolute; top: -9px; right: -9px; width: 26px; height: 26px; border-radius: 50%; background: var(--border2); color: #140A05; font-size: 16px; font-weight: 900; display: flex; align-items: center; justify-content: center; }
 .result { border-radius: 14px; padding: 12px 18px; font-size: 24px; font-weight: 900; text-align: center; background: #15172F; border: 2px solid #34375E; }
 .result.ok { border-color: #6EE7A8; color: #B6F5D1; }
 .h-display { font-family: 'Cinzel', serif; font-weight: 700; line-height: 1.2; color: var(--border2); margin: 0; }
@@ -91,12 +95,61 @@ button:disabled { cursor: not-allowed; }
 /* Two flashes under 200 ms each, peak 60% or less. */
 @keyframes flash { 0% { opacity: 0; } 8% { opacity: .6; } 18% { opacity: 0; } 55% { opacity: 0; } 62% { opacity: .5; } 74%, 100% { opacity: 0; } }
 
+/* ---- Host banner ---- */
+.fx-banner { position: absolute; left: 460px; top: 24px; width: 1000px; box-sizing: border-box; padding: 20px 56px; z-index: 7; text-align: center; border-radius: 20px; border: 5px solid; animation: bannerPop 520ms cubic-bezier(.2, 1.6, .4, 1) both; }
+.fx-banner-text { position: relative; font-size: 36px; font-weight: 900; line-height: 1.2; color: #FFF8EC; text-shadow: 0 2px 0 #000000AA; overflow-wrap: anywhere; }
+.fx-banner.spooky { border-color: #FF7A1A; background: radial-gradient(ellipse at 50% 0%, #3A1A5E 0%, #140A24 75%); box-shadow: 0 0 0 3px #000000AA, 0 0 46px #FF7A1A99, 0 14px 40px #000000CC; }
+.fx-banner.jolly { border-color: #F2C14E; background: linear-gradient(180deg, #8E0F24 0%, #4E0614 100%); box-shadow: 0 0 0 3px #000000AA, 0 0 46px #F2C14E88, 0 14px 40px #000000CC; }
+.fx-web { position: absolute; width: 76px; height: 76px; }
+.fx-web.tl { left: -3px; top: -3px; } .fx-web.tr { right: -3px; top: -3px; transform: scaleX(-1); }
+.fx-web.bl { left: -3px; bottom: -3px; transform: scaleY(-1); } .fx-web.br { right: -3px; bottom: -3px; transform: scale(-1, -1); }
+.fx-spider { position: absolute; right: 120px; top: calc(100% - 6px); width: 40px; height: 120px; transform-origin: 50% 0; animation: spiderDrop 900ms cubic-bezier(.3, 1.4, .5, 1) 300ms both, spiderSway 2.4s ease-in-out 1.2s infinite alternate; }
+.fx-ribbon { position: absolute; top: 50%; width: 220px; height: 120px; margin-top: -60px; overflow: visible; }
+.fx-ribbon.l { right: calc(100% - 6px); } .fx-ribbon.r { left: calc(100% - 6px); transform: scaleX(-1); }
+.fx-ribbon .wave { transform-box: fill-box; transform-origin: 100% 40%; animation: ribbonWave 1.1s ease-in-out infinite alternate; }
+.fx-ribbon .wave.slow { animation-duration: 1.5s; animation-delay: -.4s; }
+.fx-bow { position: absolute; left: 50%; top: -44px; width: 120px; height: 70px; margin-left: -60px; }
+@keyframes bannerPop { 0% { opacity: 0; transform: translateY(-60px) scale(.8); } 100% { opacity: 1; transform: none; } }
+@keyframes spiderDrop { from { transform: scaleY(0); } }
+@keyframes spiderSway { from { rotate: -6deg; } to { rotate: 6deg; } }
+@keyframes ribbonWave { from { transform: rotate(-5deg) skewY(-4deg); } to { transform: rotate(6deg) skewY(5deg); } }
+
+/* ---- Sleigh run ---- */
+.fx-sleigh-track { --from: 1920px; position: absolute; left: 0; top: 110px; width: 1920px; height: 300px; z-index: 6; overflow: visible; }
+.fx-sleigh-track.high { top: -24px; }
+.fx-sleigh { position: absolute; left: 0; top: 0; width: 900px; height: 260px; animation: sleighFly 7.5s linear both; }
+.high .fx-sleigh { width: 480px; height: 139px; }
+.fx-sleigh svg { display: block; animation: sleighBob 1.1s ease-in-out infinite alternate; filter: drop-shadow(0 0 14px #FFE9A866); }
+.fx-gallop .leg-a, .fx-gallop .leg-b { transform-box: fill-box; transform-origin: 50% 0; animation: legSwing .32s ease-in-out infinite alternate; }
+.fx-gallop .leg-b { animation-direction: alternate-reverse; }
+.fx-wave { transform-box: fill-box; transform-origin: 90% 95%; animation: armWave .45s ease-in-out infinite alternate; }
+.fx-trail { animation: twk .5s ease-in-out infinite; }
+@keyframes sleighFly { from { transform: translate(var(--from), 60px); } to { transform: translate(-100%, -40px); } }
+@keyframes sleighBob { from { transform: translateY(-8px); } to { transform: translateY(8px); } }
+@keyframes legSwing { from { transform: rotate(-22deg); } to { transform: rotate(22deg); } }
+@keyframes armWave { from { transform: rotate(-14deg); } to { transform: rotate(16deg); } }
+
+/* ---- Mute ---- */
+.mute-btn { position: absolute; left: 1850px; top: 18px; width: 52px; height: 52px; border-radius: 50%; border: 3px solid var(--border); background: var(--panelFill); color: var(--text); display: flex; align-items: center; justify-content: center; padding: 0; z-index: 8; box-shadow: 0 6px 24px #000000AA; }
+.mute-btn[aria-pressed=true] { color: var(--muted); }
+.mute-btn.blocked { border-color: var(--border2); }
+.mute-hint { position: absolute; right: 60px; white-space: nowrap; background: var(--panelFill); border: 2px solid var(--border2); border-radius: 999px; padding: 4px 12px; font-size: 16px; font-weight: 800; }
+
+.calm .fx-banner, .calm .fx-banner *, .calm .fx-sleigh svg, .calm .fx-sleigh svg * { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .fx-banner, .fx-banner *, .fx-sleigh svg, .fx-sleigh svg * { animation: none !important; } }
+
 /* ---- Stacked layout under 1024 px wide ---- */
 .gt-root.stacked { position: static; min-height: 100%; height: auto; overflow: visible; }
-.stacked .gt-backdrop { position: fixed; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; }
-.stacked-col { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 14px; padding: 12px; box-sizing: border-box; }
+.gt-pass { display: contents; }
+.gt-clip { position: fixed; inset: 0; overflow: hidden; pointer-events: none; }
+.stacked .gt-backdrop { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; }
+.stacked-col { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 14px; padding: 12px; box-sizing: border-box; overflow-x: clip; }
+/* The 1920 px effect layers must never widen the phone page. A wider page makes Chrome zoom out,
+   the zoomed window crosses 1024 px, the layout flips and the focused field (and keyboard) is lost. */
+.stacked-col > canvas.abs0 { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .stacked .game-frame { position: relative; left: auto; top: auto; width: 100%; height: auto; min-height: 560px; }
 .stacked .rail, .stacked .score-pill { position: static; width: 100%; }
+.stacked .score-pill { flex-wrap: wrap; gap: 10px; padding: 8px 10px 8px 12px; border-radius: 26px; }
 .stacked .screen { height: auto; padding: 24px 20px; }
 .stacked .tile-grid { grid-template-columns: 1fr !important; }
 .stacked .tile { min-height: 72px; font-size: 22px; }
@@ -124,8 +177,18 @@ button:disabled { cursor: not-allowed; }
 }
 .stacked .ov-card { position: fixed !important; left: 12px !important; right: 12px; top: 8vh !important; width: auto !important; height: auto !important; max-height: 84vh; overflow-y: auto; z-index: 20; padding: 16px !important; }
 .stacked .dim { position: fixed; z-index: 19; }
-.stacked .toasts { position: fixed !important; left: 12px !important; right: 12px; top: 12px !important; width: auto !important; }
-.stacked .avatars { grid-template-columns: repeat(4, 1fr) !important; }
+.stacked .toasts { position: fixed !important; left: 12px !important; right: 68px; top: 12px !important; width: auto !important; }
+.stacked .mute-btn { position: fixed; left: auto; right: 12px; top: 12px; width: 46px; height: 46px; z-index: 25; }
+.stacked .fx-banner { position: fixed; left: 40px; right: 40px; top: 72px; width: auto; padding: 14px 18px; z-index: 24; border-width: 4px; }
+.stacked .fx-banner-text { font-size: 22px; }
+.stacked .fx-web { width: 46px; height: 46px; }
+.stacked .fx-spider { right: 30px; width: 26px; height: 78px; }
+.stacked .fx-ribbon { width: 64px; height: 44px; margin-top: -22px; }
+.stacked .fx-bow { width: 80px; height: 46px; margin-left: -40px; top: -30px; }
+.stacked .fx-sleigh-track { --from: 100vw; position: fixed; top: 22vh; width: 100vw; height: 30vw; z-index: 23; }
+.stacked .fx-sleigh, .stacked .high .fx-sleigh { width: 92vw; height: 26.6vw; }
+.stacked .avatars { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+.stacked .pick { font-size: 12.5px; padding: 8px 2px; overflow-wrap: anywhere; }
 .stacked .guess-grid { grid-template-columns: 1fr !important; }
 .stacked .guess-grid ol { display: none; }
 .stacked .ticker { position: fixed !important; left: 12px !important; right: 12px; top: auto !important; bottom: 12px; width: auto !important; }

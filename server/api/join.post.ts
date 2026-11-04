@@ -1,5 +1,5 @@
 import { defineGameHandler } from '~~/server/engine/store'
-import { AVATAR_KEYS } from '~~/shared/catalog'
+import { JOINABLE_AVATAR_KEYS } from '~~/shared/catalog'
 import { z } from 'zod'
 import { Authorization, Conflict } from '~~/server/engine/errors'
 import { db, log, save, uid } from '~~/server/engine/db'
@@ -9,7 +9,8 @@ import { envelope, parseBody } from '~~/server/engine/control'
 const schema = z.object({
   name: z.string().trim().min(2, 'Name needs at least 2 characters').max(24),
   email: z.string().trim().email('Enter your work email'),
-  avatarKey: z.enum(AVATAR_KEYS as [string, ...string[]]),
+  // Left out when the player did not pick one, so a returning player keeps theirs.
+  avatarKey: z.enum(JOINABLE_AVATAR_KEYS as [string, ...string[]]).optional(),
 })
 export default defineGameHandler(async (event) => {
   rateLimit(event, 'join', 120)
@@ -23,13 +24,14 @@ export default defineGameHandler(async (event) => {
     if (p.removedAt) throw Authorization('The host removed you from this party.')
     if (p.displayName.toLowerCase() !== b.name.toLowerCase()) throw Conflict('That email already has a seat under a different name.')
     p.lastSeenAt = Date.now()
+    if (b.avatarKey && b.avatarKey !== p.avatarKey) { p.avatarKey = b.avatarKey; broadcast('state.changed', {}) }
   } else {
-    p = { id: uid(), displayName: b.name, emailHash, avatarKey: b.avatarKey, teamId: null, isHost: false, removedAt: null, joinedAt: Date.now(), lastSeenAt: Date.now() }
+    p = { id: uid(), displayName: b.name, emailHash, avatarKey: b.avatarKey ?? 'skelly', teamId: null, isHost: false, removedAt: null, joinedAt: Date.now(), lastSeenAt: Date.now() }
     d.players.push(p)
     log('join', `${p.displayName} joined`, {}, p.displayName)
     broadcast('state.changed', {}, { bump: false })
   }
   await setPlayerSession(event, p.id)
   save()
-  return envelope({ welcomeBack, name: p.displayName })
+  return envelope({ welcomeBack, name: p.displayName, avatarKey: p.avatarKey })
 })

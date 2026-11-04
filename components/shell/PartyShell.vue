@@ -8,14 +8,23 @@ import { usePartyStore } from '~/stores/party'
 const props = defineProps<{ progress: number; stage?: boolean; thumb?: boolean; fixedWidth?: number }>()
 const store = usePartyStore()
 const root = ref<HTMLElement | null>(null)
-useThemeVars(root, toRef(props, 'progress'))
+// Effects read the shown theme position, so a banner dresses for the half the party is in.
+provide('gtProgress', useThemeVars(root, toRef(props, 'progress')))
 provide('gtStage', !!props.stage)
 provide('gtStill', !!props.thumb)
 
 const vw = ref(1920); const vh = ref(1080)
-const measure = () => { vw.value = window.innerWidth; vh.value = window.innerHeight }
-onMounted(() => { measure(); window.addEventListener('resize', measure) })
-onBeforeUnmount(() => window.removeEventListener('resize', measure))
+// An on-screen keyboard resizes the window. Re-laying out then would rebuild the focused
+// field and close the keyboard again, so hold the layout until typing ends.
+const typing = () => !!document.activeElement?.matches('input:not([type=radio]):not([type=checkbox]),textarea,select,[contenteditable]')
+const measure = () => {
+  if (typing()) return
+  // clientWidth is the layout width, which pinch zoom and focus zoom leave alone.
+  vw.value = document.documentElement.clientWidth || window.innerWidth; vh.value = window.innerHeight
+}
+const settle = () => setTimeout(measure, 300)
+onMounted(() => { measure(); window.addEventListener('resize', measure); window.addEventListener('focusout', settle) })
+onBeforeUnmount(() => { window.removeEventListener('resize', measure); window.removeEventListener('focusout', settle) })
 
 const stacked = computed(() => !props.stage && !props.thumb && vw.value < 1024)
 const stageStyle = computed(() => {
@@ -32,9 +41,12 @@ const stageStyle = computed(() => {
     :class="{ calm: store.calm || thumb, stacked }"
     :style="fixedWidth ? { position: 'absolute', inset: 0 } : undefined"
   >
-    <div class="gt-stage" :class="{ 'gt-backdrop': stacked }" :style="stageStyle">
-      <SceneLayer />
-      <ShellContent v-if="!stacked" :stage="stage" :thumb="thumb"><slot /></ShellContent>
+    <!-- Stacked, the clip keeps the 1920 px backdrop from widening the phone page. -->
+    <div :class="stacked ? 'gt-clip' : 'gt-pass'">
+      <div class="gt-stage" :class="{ 'gt-backdrop': stacked }" :style="stageStyle">
+        <SceneLayer />
+        <ShellContent v-if="!stacked" :stage="stage" :thumb="thumb"><slot /></ShellContent>
+      </div>
     </div>
     <div v-if="stacked" class="stacked-col"><ShellContent stacked><slot /></ShellContent></div>
   </div>

@@ -2,10 +2,12 @@
 // Participant view. The join and lobby screens sit inside the frame on a static p = 0 shell.
 import { computed, onMounted } from 'vue'
 import { useKeyBuffer } from '~/composables/useKeyBuffer'
+import { useFrogCode } from '~/composables/useFrogCode'
 import { usePartyStore } from '~/stores/party'
 
 const store = usePartyStore()
 useKeyBuffer()
+useFrogCode()
 onMounted(() => store.connect({ heartbeat: true }))
 // The personal override is the player's own; the stage page never reads it.
 const progress = computed(() => (store.me ? store.personalP ?? store.snap?.theme.p ?? 0 : 0))

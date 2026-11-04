@@ -16,6 +16,9 @@ export const CHARACTERS = [
   { key: 'cocoa', name: 'Cocoa Cauldron' },
 ] as const
 export const AVATAR_KEYS = CHARACTERS.map(c => c.key) as string[]
+// Hidden avatar. Typing the phrase anywhere unlocks it; it never shows in the normal picker.
+export const FROG = { key: 'wednesday', name: 'Wednesday Frog', phrase: 'itiswednesdaymydudes' }
+export const JOINABLE_AVATAR_KEYS = [...AVATAR_KEYS, FROG.key]
 
 export const TEAM_COLORS = [
   { key: 'pumpkin', name: 'Pumpkin', hex: '#FF8A2A', pattern: 'Diagonal stripes' },

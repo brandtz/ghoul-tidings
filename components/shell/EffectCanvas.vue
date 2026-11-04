@@ -1,14 +1,17 @@
 <script setup lang="ts">
 // One-shot global effects. The frame stays clear of particles while a question is open.
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue'
 import { EFFECTS } from '~/composables/effects'
+import { initEffectSound, playEffectSound } from '~/composables/effectSound'
 import { usePartyStore } from '~/stores/party'
 
 const props = defineProps<{ stage?: boolean }>()
 const store = usePartyStore()
 const el = ref<HTMLCanvasElement | null>(null)
-const banner = ref<string | null>(null)
-let raf = 0; let bannerT: ReturnType<typeof setTimeout>
+const progress = inject<Ref<number>>('gtProgress', ref(0))
+const banner = ref<{ text: string; jolly: boolean } | null>(null)
+const sleigh = ref(0)
+let raf = 0; let bannerT: ReturnType<typeof setTimeout>; let sleighT: ReturnType<typeof setTimeout>
 interface P { x: number; y: number; vx: number; vy: number; r: number; c: string; rot: number; vr: number }
 let parts: P[] = []; let kind = ''; let until = 0; let last = 0
 
@@ -55,9 +58,17 @@ watch(() => store.effect, (e) => {
   if (!e) return
   const def = EFFECTS[e.key]
   if (!def) return
+  playEffectSound(e.key, progress.value)
   if (def.layer === 'banner') {
-    banner.value = e.text ?? ''
+    banner.value = null
+    requestAnimationFrame(() => { banner.value = { text: e.text ?? '', jolly: progress.value >= 0.5 } })
     clearTimeout(bannerT); bannerT = setTimeout(() => { banner.value = null }, def.durationMs)
+    return
+  }
+  if (def.layer === 'sprite') {
+    if (store.calm) return
+    sleigh.value = e.n
+    clearTimeout(sleighT); sleighT = setTimeout(() => { sleigh.value = 0 }, def.durationMs)
     return
   }
   if (def.layer !== 'canvas' || store.calm) return
@@ -66,10 +77,12 @@ watch(() => store.effect, (e) => {
   last = performance.now(); until = last + def.durationMs
   raf = requestAnimationFrame(frame)
 })
-onBeforeUnmount(() => cancelAnimationFrame(raf))
+onMounted(initEffectSound)
+onBeforeUnmount(() => { cancelAnimationFrame(raf); clearTimeout(bannerT); clearTimeout(sleighT) })
 </script>
 
 <template>
   <canvas ref="el" class="abs0 no-pe" width="1920" height="1080" aria-hidden="true" />
-  <div v-if="banner !== null" role="status" class="fade-in card no-pe" style="position:absolute;left:560px;top:16px;width:800px;box-sizing:border-box;padding:10px 20px;text-align:center;font-size:26px;font-weight:900;z-index:5">{{ banner }}</div>
+  <EffectSleigh v-if="sleigh" :key="sleigh" :high="!!roundOpen" />
+  <EffectBanner v-if="banner" :text="banner.text" :jolly="banner.jolly" />
 </template>

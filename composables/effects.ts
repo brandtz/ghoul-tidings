@@ -1,7 +1,7 @@
 // Effect registry. Phase 2 adds new effects here with no plumbing changes.
 export interface EffectDef {
   scope: 'global' | 'personal'
-  layer: 'canvas' | 'lightning' | 'banner'
+  layer: 'canvas' | 'lightning' | 'banner' | 'sprite'
   durationMs: number
   particles?: 'snow' | 'confetti' | 'bats'
   reducedMotion: 'none' | 'glow' | 'fade'
@@ -15,3 +15,4 @@ registerEffect('bats', { scope: 'global', layer: 'canvas', durationMs: 6000, par
 registerEffect('confetti', { scope: 'global', layer: 'canvas', durationMs: 5000, particles: 'confetti', reducedMotion: 'none' })
 registerEffect('spirit', { scope: 'global', layer: 'canvas', durationMs: 4000, particles: 'confetti', reducedMotion: 'none' })
 registerEffect('banner', { scope: 'global', layer: 'banner', durationMs: 6000, reducedMotion: 'fade' })
+registerEffect('sleigh', { scope: 'global', layer: 'sprite', durationMs: 7500, reducedMotion: 'none' })
