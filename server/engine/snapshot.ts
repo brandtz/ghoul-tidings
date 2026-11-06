@@ -1,6 +1,7 @@
 // Builds what browsers may see. This is the secrecy boundary: correct answers,
 // the lie and accepted guesses are only read here after a round is revealed.
 import { guessValue, zoomStepAt } from '~~/shared/scoring'
+import { bingoCard } from '~~/shared/phase2'
 import type { Me, PublicRound, PublicSnapshot, WinnerEntry } from '~~/shared/types'
 import { db, type Player } from './db'
 import { board, playerTotals, teamBoard } from './scores'
@@ -73,6 +74,7 @@ function buildMe(p: Player, ranks: ReturnType<typeof board>, totals: Map<string,
     powerup: p.teamId ? d.teamPowerups[p.teamId] ?? null : null,
     unlocks: { bag: hasUnlock(p.id, 'bag'), console: hasUnlock(p.id, 'console'), bingo: hasUnlock(p.id, 'bingo'), legendary: !!d.party.settings.flags.legendary && hasUnlock(p.id, 'legendary') },
     bingoClaimed: d.bingoClaimed.includes(p.id),
+    bingoCard: d.party.settings.flags.bingo && hasUnlock(p.id, 'bingo') ? bingoCard(d.party.settings.bingoSquares, p.id) : null,
   }
 }
 

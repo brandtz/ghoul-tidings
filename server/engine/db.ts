@@ -6,6 +6,7 @@ import { resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import type { PrizeTier, RoundPhase, ItemType, SegmentType } from '~~/shared/types'
 import { DEFAULT_CAPS } from '~~/shared/scoring'
+import { DEFAULT_BINGO_SQUARES } from '~~/shared/phase2'
 import { buildSeed } from './seed'
 
 export const DATA_DIR = resolve(process.cwd(), '.data')
@@ -27,6 +28,7 @@ export interface Settings {
   spiritGoal: number
   hostSound: { chime: boolean; sting: boolean }
   flags: Record<string, boolean>
+  bingoSquares: string[]
 }
 export interface LiveState {
   segmentId: string | null
@@ -84,6 +86,7 @@ const g = globalThis as any
 export function normalize(d: any): DB {
   Object.assign(d, { codes: [], redemptions: [], statusEffects: [], teamPowerups: {}, unlocks: {}, bingoClaimed: [], attemptTimes: {}, lastScoringCode: {}, missedAttempts: 0, rate: {}, busLight: {}, ...d })
   d.party.settings.caps = { ...DEFAULT_CAPS, ...d.party.settings.caps }
+  d.party.settings.bingoSquares ??= [...DEFAULT_BINGO_SQUARES]
   return d
 }
 
@@ -136,4 +139,5 @@ export const defaultSettings = (start: number): Settings => ({
   spiritGoal: 600,
   hostSound: { chime: false, sting: false },
   flags: { eggs: false, powerups: false, cheatSheet: false, bingo: false, eggHunt: false, legendary: false },
+  bingoSquares: [...DEFAULT_BINGO_SQUARES],
 })

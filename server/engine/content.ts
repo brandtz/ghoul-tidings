@@ -1,6 +1,7 @@
 // Admin content CRUD, grouped by kind. Every action logs and broadcasts.
 import { z } from 'zod'
 import { TEAM_COLORS } from '~~/shared/catalog'
+import { BINGO_MIN } from '~~/shared/phase2'
 import { db, log, uid } from './db'
 import { broadcast } from './bus'
 import { NotFound, Validation } from './errors'
@@ -109,7 +110,13 @@ export const CONTENT: Record<string, Record<string, Handler>> = {
         soloMultiplier: z.number().min(1).max(3).optional(), noRepeatWinners: z.boolean().optional(),
         ttlOpensAt: z.number().optional(), ttlClosesAt: z.number().optional(), points: z.record(z.string(), z.number()).optional(),
         caps: z.record(z.string(), z.number()).optional(), hostSound: z.object({ chime: z.boolean(), sting: z.boolean() }).optional(),
+        bingoSquares: z.array(z.string().trim().min(1).max(60)).optional(),
       }).parse(raw)
+      if (s.bingoSquares) {
+        s.bingoSquares = [...new Set(s.bingoSquares.filter(x => x.toUpperCase() !== 'FREE'))]
+        if (s.bingoSquares.length < BINGO_MIN) throw Validation(`Bingo needs at least ${BINGO_MIN} different squares (you have ${s.bingoSquares.length})`)
+        if (s.bingoSquares.length > 100) throw Validation('Keep bingo to 100 squares or fewer')
+      }
       const p = db().party
       if (s.name) p.name = s.name
       if (s.durationMin) p.durationMin = s.durationMin

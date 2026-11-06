@@ -26,9 +26,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     </div>
     <div style="margin-top:24px;font-size:21px;font-weight:700;line-height:1.5">There are more codes to discover.<br><span style="color:var(--muted)">Some help, some are just for fun, and some might be a trick.</span></div>
     <div style="margin-top:14px;font-size:16px;font-weight:700;color:var(--muted)">Codes work anywhere except while you are typing in a box.</div>
-    <div v-if="(me?.unlocks.bag && flags.cheatSheet) || (me?.unlocks.bingo && flags.bingo)" style="margin-top:14px;display:flex;gap:10px;justify-content:center">
+    <div v-if="(me?.unlocks.bag && flags.cheatSheet) || me?.bingoCard" style="margin-top:14px;display:flex;gap:10px;justify-content:center">
       <button v-if="me?.unlocks.bag && flags.cheatSheet" class="btn-gold" @click="$emit('bag')">Open the bag</button>
-      <button v-if="me?.unlocks.bingo && flags.bingo" class="btn-ghost" @click="$emit('bingo')">Bingo card</button>
+      <button v-if="me?.bingoCard" class="btn-ghost" @click="$emit('bingo')">Bingo card</button>
     </div>
   </section>
 </template>

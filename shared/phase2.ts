@@ -69,12 +69,21 @@ export function seededShuffle<T>(list: T[], seed: string) {
   return a
 }
 
-export const BINGO_SQUARES = [
+/** The starting pool. The host can replace it in Content → Codes; each player's card is a shuffle of the pool. */
+export const DEFAULT_BINGO_SQUARES = [
   'You are on mute', 'Can you see my screen?', 'Dog in the background', 'Someone says "circle back"', 'Camera off, cat on', 'Next slide, please',
-  'Who just joined?', 'Sorry, go ahead', 'Frozen face', 'Let\'s take that offline', 'Echo on the line', 'Wrong window shared',
-  'FREE', 'Lunch on camera', 'Doorbell rings', 'Two people talk at once', 'Holiday sweater spotted', 'Virtual background glitch',
+  'Who just joined?', 'Sorry, go ahead', 'Frozen face', "Let's take that offline", 'Echo on the line', 'Wrong window shared',
+  'Lunch on camera', 'Doorbell rings', 'Two people talk at once', 'Holiday sweater spotted', 'Virtual background glitch',
   'Someone says "quick question"', 'Coffee refill', 'Calendar pop-up', 'Kid cameo', 'Great job, team', 'Reaction spam', 'Running a few minutes late',
 ]
+export const BINGO_MIN = 24
+export const BINGO_FREE = 12
+
+/** 24 squares from the pool in this player's own order, with FREE in the middle. */
+export function bingoCard(pool: string[], seed: string) {
+  const picks = seededShuffle(pool.length >= BINGO_MIN ? pool : [...pool, ...DEFAULT_BINGO_SQUARES], seed).slice(0, BINGO_MIN)
+  return [...picks.slice(0, BINGO_FREE), 'FREE', ...picks.slice(BINGO_FREE)]
+}
 
 export const hasBingo = (marked: Set<number>) => {
   const lines: number[][] = []

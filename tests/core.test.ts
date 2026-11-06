@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { contrast, KEYFRAMES, layersAt, ramp, themeAt } from '../shared/theme'
 import { DEFAULT_CAPS, guessValue, runPipeline, speedBonus, trackPosition, zoomStepAt, type ScoreCommand } from '../shared/scoring'
 import { isMatch, normalize } from '../shared/match'
-import { hasBingo, rankBand, seededShuffle, tailsFor } from '../shared/phase2'
+import { DEFAULT_BINGO_SQUARES, bingoCard, hasBingo, rankBand, seededShuffle, tailsFor } from '../shared/phase2'
 import { dueOffsetMs, midnightIndex, scheduleProgress } from '../shared/schedule'
 
 const ctx = { scoringPaused: false, settings: { soloMultiplier: 1.5, caps: DEFAULT_CAPS } }
@@ -115,5 +115,17 @@ describe('phase 2', () => {
     expect([0, 1, 5].map(r => rankBand(r, 6))).toEqual(['leader', 'leader', 'trailing'])
     expect(hasBingo(new Set([10, 11, 13, 14]))).toBe(true)
     expect(hasBingo(new Set([0, 1, 2]))).toBe(false)
+  })
+
+  it('deals each player their own 24-square bingo card from the host pool', () => {
+    const pool = Array.from({ length: 40 }, (_, i) => `Square ${i}`)
+    const a = bingoCard(pool, 'player-a')
+    expect(a).toHaveLength(25)
+    expect(a[12]).toBe('FREE')
+    expect(new Set(a).size).toBe(25)
+    expect(a.every(x => x === 'FREE' || pool.includes(x))).toBe(true)
+    expect(bingoCard(pool, 'player-a')).toEqual(a)
+    expect(bingoCard(pool, 'player-b')).not.toEqual(a)
+    expect(bingoCard(DEFAULT_BINGO_SQUARES, 'x').filter(x => x !== 'FREE').sort()).toEqual([...DEFAULT_BINGO_SQUARES].sort())
   })
 })

@@ -17,7 +17,7 @@ Decisions taken without asking:
 - The stored catalog is my placeholder. Replace the words and tune rewards before the party.
 - Listed codes keep readable text on the server so the bag can show them. Unlisted codes exist only as hashes. This bends the "hashes only" line in the plan.
 - There is a shared 8 second cooldown between score-changing codes per player, and 12 tries a minute.
-- Bingo is honor system, like self-mark, and the host can reverse it from the monitor.
+- Bingo is honor system, like self-mark, and the host can reverse it from the monitor. The host edits the square pool in Content → Codes → Bingo squares (24 or more); each player gets their own shuffle of 24 with FREE in the middle. The card pops open on unlock and stays in the left rail.
 - Power-ups have no rim to live in, so the card sits in the left rail. The race badges sit in the Leaderboard.
 
 Left out:

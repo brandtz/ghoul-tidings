@@ -23,7 +23,7 @@ const base = (): PublicSnapshot => ({
   recentWinner: { name: 'Taylor M.', avatarKey: 'twinkle' }, hintRevealed: hint.value,
   ttl: { opensAt: 0, closesAt: Date.now() + 3e6, open: true },
   top10: [], teams: [], spirit: { value: 120, goal: 600 }, present: 57, joined: 61, presentation: null, finale: null, flags: {}, eggBoard: null,
-  me: { id: 'me', name: 'You', avatarKey: 'skelly', isHost: false, teamId: null, teamName: null, score: 12840, rank: 23, ofPlayers: 57, answer: null, result: null, ttl: null, offer: null, powerup: null, unlocks: { bag: false, console: false, bingo: false, legendary: false }, bingoClaimed: false },
+  me: { id: 'me', name: 'You', avatarKey: 'skelly', isHost: false, teamId: null, teamName: null, score: 12840, rank: 23, ofPlayers: 57, answer: null, result: null, ttl: null, offer: null, powerup: null, unlocks: { bag: false, console: false, bingo: false, legendary: false }, bingoClaimed: false, bingoCard: null },
 })
 const refresh = () => { store.snap = base() }
 onMounted(refresh)

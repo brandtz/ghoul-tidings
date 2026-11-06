@@ -15,6 +15,8 @@ const showBingo = ref(false)
 const showLegendary = ref(false)
 // Opens by itself the moment the code lands, not on later reloads. The host switch closes it.
 watch(() => store.me?.unlocks.legendary, (on, was) => { if (on && was === false) showLegendary.value = true })
+// Same for bingo: the card slides out the moment the code lands.
+watch(() => !!store.me?.bingoCard, (on, was) => { if (on && was === false) showBingo.value = true })
 const personal = computed(() => !props.stage && !props.thumb)
 const hasSeat = computed(() => !!store.me)
 
@@ -40,6 +42,7 @@ watch(() => store.effect, (e) => { if (e?.key === 'lightning') beat() })
     <TruthsCard @open="showTtl = true" />
     <CodesHintCard @open="showHint = true" />
     <PowerUpCard />
+    <BingoCard @open="showBingo = true" />
     <LegendaryCard @open="showLegendary = true" />
   </aside>
   <aside class="rail rail-right" aria-label="Raffle">
@@ -81,7 +84,7 @@ watch(() => store.effect, (e) => { if (e?.key === 'lightning') beat() })
 
   <HintModal v-if="showHint" @close="showHint = false" @bag="showHint = false; showBag = true" @bingo="showHint = false; showBingo = true" />
   <BagModal v-if="showBag" @close="showBag = false" />
-  <BingoModal v-if="showBingo" @close="showBingo = false" />
+  <BingoModal v-if="personal && showBingo && store.me?.bingoCard" @close="showBingo = false" />
   <TtlDialog v-if="showTtl" @close="showTtl = false" />
   <LeaderboardDrawer v-if="showBoard" @close="showBoard = false" />
   <LegendaryModal v-if="personal && showLegendary && store.me?.unlocks.legendary" @close="showLegendary = false" />

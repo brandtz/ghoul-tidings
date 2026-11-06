@@ -137,8 +137,7 @@ const type = async (p, s) => { await p.locator('body').click({ position: { x: 5,
   // Bingo.
   await type(a, word('unlock_bingo')); await wait(300)
   check((await stateOf(a)).me.unlocks.bingo, 'bingo unlocks')
-  await a.click('[aria-label="Open the Trick or Treat hint"]'); await wait(300)
-  await a.click('button:has-text("Bingo card")'); await wait(400)
+  check(await a.locator('[aria-label="Meeting bingo"]').isVisible(), 'bingo card pops open on unlock')
   for (const n of [10, 11, 13, 14]) await a.locator('[aria-label="Meeting bingo"] .tile-grid button').nth(n).click()
   await a.screenshot({ path: `${OUT}/p2-bingo.png` })
   await a.click('button:has-text("Call bingo")'); await wait(700)

@@ -45,6 +45,7 @@ export interface Me {
   powerup: string | null
   unlocks: { bag: boolean; console: boolean; bingo: boolean; legendary: boolean }
   bingoClaimed: boolean
+  bingoCard: string[] | null
 }
 
 export interface WinnerEntry { name: string; avatarKey: string; prize: string; tier: PrizeTier }
