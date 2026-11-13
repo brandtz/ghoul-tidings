@@ -1,8 +1,9 @@
 // The wire contract. PublicSnapshot is everything a browser may see; nothing
 // secret (correct answers, the lie, accepted guesses) may appear before reveal.
+import type { BallPattern } from './balls'
 export type RoundPhase = 'open' | 'locked' | 'revealed'
 export type ItemType = 'trivia' | 'guess' | 'ttl'
-export type SegmentType = 'intermission' | 'trivia' | 'guess' | 'ttl' | 'bingo' | 'presentation' | 'finale'
+export type SegmentType = 'intermission' | 'trivia' | 'guess' | 'ttl' | 'bingo' | 'balls' | 'presentation' | 'finale'
 export type PrizeTier = 'swag' | 'special' | 'grand'
 /** raffle: a random draw on the schedule. top_score and most_eggs are awarded by the host at the finale. */
 export type PrizeKind = 'raffle' | 'top_score' | 'most_eggs'
@@ -49,6 +50,8 @@ export interface Me {
   /** Present while bingo is open. Dabs live on the device until the player calls bingo. */
   bingoCard: string[] | null
   bingoClaim: BingoClaimStatus | null
+  /** Ghoul Bingo: this game's card (0 is FREE) while a game runs, and whether this player won it. */
+  balls: { card: number[] | null; won: boolean }
 }
 
 export interface WinnerEntry { name: string; avatarKey: string; prize: string; tier: PrizeTier; kind: PrizeKind; at: number }
@@ -66,6 +69,11 @@ export interface PublicSnapshot {
   /** Every prize handed out so far, newest first: raffle draws and finale awards. */
   winners: WinnerEntry[]
   bingo: { open: boolean; called: string[]; winners: { name: string; avatarKey: string }[]; pending: number }
+  balls: {
+    game: number; status: 'idle' | 'playing' | 'won'; pattern: BallPattern; drawn: number[]; auto: boolean; everyS: number
+    winners: { name: string; avatarKey: string }[]
+    history: { game: number; pattern: BallPattern; winners: string[]; balls: number }[]
+  }
   hintRevealed: boolean
   ttl: { opensAt: number; closesAt: number; open: boolean }
   top10: BoardRow[]

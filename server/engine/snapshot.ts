@@ -9,6 +9,7 @@ import { GUESS_STEPS, currentRound, currentSegment, nextSegment, orderedSegments
 import { nextPrize, prizeDue, rafflePrizes } from './raffle'
 import { eggBoard, hasUnlock } from './codes'
 import { bingoPublic, myBingoClaim } from './bingo'
+import { ballsPublic, myBalls } from './balls'
 
 const PRESENCE_MS = () => db().party.settings.presenceMin * 60000
 export const presentCount = () => {
@@ -74,6 +75,7 @@ function buildMe(p: Player, ranks: ReturnType<typeof board>, totals: Map<string,
     unlocks: { bag: hasUnlock(p.id, 'bag'), console: hasUnlock(p.id, 'console'), bingo: hasUnlock(p.id, 'bingo'), legendary: !!d.party.settings.flags.legendary && hasUnlock(p.id, 'legendary') },
     bingoCard: d.party.state.bingo.open ? bingoCard(d.party.settings.bingoSquares, p.id) : null,
     bingoClaim: myBingoClaim(p.id),
+    balls: myBalls(p.id),
   }
 }
 
@@ -105,6 +107,7 @@ export function snapshot(player: Player | null): PublicSnapshot {
     },
     winners: recent,
     bingo: bingoPublic(),
+    balls: ballsPublic(),
     hintRevealed: st.hintRevealed,
     ttl: { opensAt: s.ttlOpensAt, closesAt: s.ttlClosesAt, open: now >= s.ttlOpensAt && now < s.ttlClosesAt },
     top10: ranks.slice(0, 10),

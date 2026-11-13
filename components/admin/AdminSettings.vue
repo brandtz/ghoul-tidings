@@ -9,15 +9,15 @@ const teams = computed(() => !!cfg.value.flags.teams)
 const toLocal = (t: number) => { const d = new Date(t - new Date(t).getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16) }
 const f = ref({
   name: s.value.party.name, start: toLocal(s.value.party.scheduledStart), joinUrl: cfg.value.joinUrl, teamCap: cfg.value.teamCap, maxTeams: cfg.value.maxTeams,
-  soloMultiplier: cfg.value.soloMultiplier, triviaBase: cfg.value.points.triviaBase, bingo: cfg.value.points.bingo, bingoFirst: cfg.value.points.bingoFirst,
+  soloMultiplier: cfg.value.soloMultiplier, triviaBase: cfg.value.points.triviaBase, bingo: cfg.value.points.bingo, bingoFirst: cfg.value.points.bingoFirst, ballsWin: cfg.value.points.ballsWin,
   capGame: cfg.value.caps.trivia,
 })
 async function save() {
   const v = f.value
   const r = await admin.content('settings', 'save', {
     name: v.name, scheduledStart: new Date(v.start).getTime(), joinUrl: v.joinUrl, teamCap: v.teamCap, maxTeams: v.maxTeams, soloMultiplier: v.soloMultiplier,
-    points: { triviaBase: v.triviaBase, bingo: v.bingo, bingoFirst: v.bingoFirst },
-    caps: { trivia: v.capGame, guess: v.capGame, bingo: v.capGame },
+    points: { triviaBase: v.triviaBase, bingo: v.bingo, bingoFirst: v.bingoFirst, ballsWin: v.ballsWin },
+    caps: { trivia: v.capGame, guess: v.capGame, bingo: v.capGame, balls: v.capGame },
   })
   if (r) admin.flash('Settings saved')
 }
@@ -69,8 +69,9 @@ const logout = async () => { await $fetch('/api/admin/logout', { method: 'POST' 
       <div class="grid grid-cols-2 gap-3">
         <label class="flex flex-col gap-1 text-[13px] font-bold text-a-muted">Trivia base points<input v-model.number="f.triviaBase" type="number" class="a-input"></label>
         <label v-if="teams" class="flex flex-col gap-1 text-[13px] font-bold text-a-muted">Solo multiplier<input v-model.number="f.soloMultiplier" type="number" step="0.05" min="1" max="3" class="a-input"></label>
-        <label class="flex flex-col gap-1 text-[13px] font-bold text-a-muted">Bingo points<input v-model.number="f.bingo" type="number" min="0" class="a-input"></label>
-        <label class="flex flex-col gap-1 text-[13px] font-bold text-a-muted">First bingo bonus<input v-model.number="f.bingoFirst" type="number" min="0" class="a-input"></label>
+        <label class="flex flex-col gap-1 text-[13px] font-bold text-a-muted">Meeting Bingo points<input v-model.number="f.bingo" type="number" min="0" class="a-input"></label>
+        <label class="flex flex-col gap-1 text-[13px] font-bold text-a-muted">First Meeting Bingo bonus<input v-model.number="f.bingoFirst" type="number" min="0" class="a-input"></label>
+        <label class="flex flex-col gap-1 text-[13px] font-bold text-a-muted">Ghoul Bingo win<input v-model.number="f.ballsWin" type="number" min="0" class="a-input"></label>
         <label class="flex flex-col gap-1 text-[13px] font-bold text-a-muted">Cap per game event<input v-model.number="f.capGame" type="number" class="a-input"></label>
       </div>
     </section>

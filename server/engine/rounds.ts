@@ -9,6 +9,7 @@ import { Conflict, NotFound, Validation } from './errors'
 import { applyScore } from './scores'
 import { fireDueDraw } from './raffle'
 import { openBingo } from './bingo'
+import { finishGame, newGame } from './balls'
 
 const OPEN_BUFFER_MS = 1500
 const RAFFLE_BEAT_MS = 8500
@@ -42,6 +43,7 @@ export function startSegment(segmentId?: string) {
   st.segmentId = seg.id; st.itemIndex = 0; st.roundId = null
   if (seg.type === 'finale') st.themeStep = 1
   if (seg.type === 'bingo') openBingo()
+  if (seg.type === 'balls' && st.balls.status === 'idle') newGame()
   log('state', `Segment started: ${seg.title}`, { segmentId: seg.id }, 'host')
   broadcast('state.changed', { segment: seg.title })
   return seg
@@ -51,6 +53,7 @@ export function endSegment(announce = true) {
   const st = db().party.state; const seg = currentSegment()
   if (!seg) return
   if (!st.doneSegments.includes(seg.id)) st.doneSegments.push(seg.id)
+  if (seg.type === 'balls' && st.balls.status !== 'idle') finishGame(false)
   st.segmentId = null; st.roundId = null; st.itemIndex = -1; st.presentation = null
   log('state', `Segment ended: ${seg.title}`, { segmentId: seg.id }, 'host')
   if (announce) broadcast('state.changed', {})

@@ -13,7 +13,7 @@ const until = computed(() => {
   const time = [Math.floor(s / 3600) % 24, Math.floor(s / 60) % 60, s % 60].map(n => String(n).padStart(2, '0')).join(':')
   return { d, time, zero: ms === 0 }
 })
-const games = [['Holiday trivia', 'Four choices, ten seconds, faster pays more.'], ['Guess the Thing', 'A tight crop zooms out. Guess early for more.'], ['Meeting Bingo', 'Everyone gets a card. Dab your own, then call Bingo!']]
+const games = [['Holiday trivia', 'Four choices, ten seconds, faster pays more.'], ['Guess the Thing', 'A tight crop zooms out. Guess early for more.'], ['Ghoul Bingo', 'Classic 75-ball bingo. Dab your numbers, then shout Bingo!'], ['Meeting Bingo', 'Runs all meeting. Dab what happens on the call.']]
 const teams = computed(() => !!store.snap?.flags.teams)
 </script>
 

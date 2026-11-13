@@ -7,6 +7,7 @@ import { lastAction, playerTotals, teamBoard } from './scores'
 import { currentRound, currentSegment, orderedSegments, segmentItems } from './rounds'
 import { AWARD_TITLE, awardLeader, midnightPrizeId, nextPrize, orderedPrizes, prizeDue, rafflePrizes } from './raffle'
 import { checkClaim } from './bingo'
+import { ballsPublic } from './balls'
 import { winners } from './snapshot'
 import { presentCount } from './snapshot'
 
@@ -36,7 +37,7 @@ export function adminState() {
     segments: ordered.map((s) => {
       const list = segmentItems(s)
       const status = s.id === seg?.id ? 'Live' : st.doneSegments.includes(s.id) ? 'Done' : s.id === nextSeg?.id ? 'Up next' : s.type === 'finale' ? 'Locked' : 'Ready'
-      const sub = s.type === 'trivia' ? `${list.length} questions` : s.type === 'guess' ? `${list.length} images · 5 s per zoom` : s.type === 'ttl' ? `${list.length} approved · 20 s each` : s.type === 'bingo' ? (st.bingo.open ? `Open · ${st.bingo.called.length} called` : 'Opens bingo for everyone') : s.type === 'presentation' ? 'Slides' : s.type === 'finale' ? 'Podium, finish line, recap' : 'Join card on stage'
+      const sub = s.type === 'trivia' ? `${list.length} questions` : s.type === 'guess' ? `${list.length} images · 5 s per zoom` : s.type === 'ttl' ? `${list.length} approved · 20 s each` : s.type === 'bingo' ? (st.bingo.open ? `Meeting Bingo open · ${st.bingo.called.length} called` : 'Opens Meeting Bingo for the rest of the party') : s.type === 'balls' ? (st.balls.game ? `75-ball bingo · ${st.balls.history.length} ${st.balls.history.length === 1 ? 'game' : 'games'} played` : '75-ball bingo · line, corners, full card') : s.type === 'presentation' ? 'Slides' : s.type === 'finale' ? 'Podium, finish line, recap' : 'Join card on stage'
       return { id: s.id, type: s.type, title: s.title, status, sub: s.id === seg?.id && list.length ? `${sub} · now on ${st.itemIndex + 1}` : sub, itemCount: list.length }
     }),
     current: seg ? {
@@ -68,6 +69,7 @@ export function adminState() {
       ...st.bingo, pool: party.settings.bingoSquares, free: BINGO_FREE,
       claims: d.bingoClaims.map(c => ({ ...c, player: d.players.find(p => p.id === c.playerId)?.displayName ?? '?', ...checkClaim(c) })).sort((a, b) => b.createdAt - a.createdAt),
     },
+    balls: { ...ballsPublic(), falseCalls: st.balls.falseCalls, lastDrawAt: st.balls.lastDrawAt, winnerBalls: st.balls.winners.map(w => w.ball) },
     players: d.players.map(p => ({
       id: p.id, name: p.displayName, avatarKey: p.avatarKey, teamId: p.teamId, teamName: teamsOn() ? d.teams.find(t => t.id === p.teamId)?.name ?? 'Lone wolf' : 'Solo',
       score: totals.get(p.id) ?? 0, lastSeenAt: p.lastSeenAt, joinedAt: p.joinedAt, removed: !!p.removedAt, isHost: p.isHost,

@@ -3,7 +3,7 @@
 import { randomUUID } from 'node:crypto'
 import type { PrizeKind, PrizeTier } from '~~/shared/types'
 import type { DB, GuessItem, Segment, TriviaQ } from './db'
-import { defaultSettings } from './db'
+import { defaultBalls, defaultSettings } from './db'
 
 const id = () => randomUUID()
 
@@ -51,17 +51,18 @@ export function buildSeed(): DB {
   const seg = (sortOrder: number, type: Segment['type'], title: string, config = {}): Segment => ({ id: id(), sortOrder, type, title, config })
   const segments = [
     seg(1, 'intermission', 'Welcome intermission'),
-    seg(2, 'trivia', 'Holiday Trivia'),
-    seg(3, 'guess', 'Guess the Thing'),
-    seg(4, 'bingo', 'Meeting Bingo'),
-    seg(5, 'trivia', 'Holiday Trivia, round 2'),
-    seg(6, 'finale', 'Finale'),
+    seg(2, 'bingo', 'Meeting Bingo kickoff'),
+    seg(3, 'trivia', 'Holiday Trivia'),
+    seg(4, 'guess', 'Guess the Thing'),
+    seg(5, 'balls', 'Ghoul Bingo'),
+    seg(6, 'trivia', 'Holiday Trivia, round 2'),
+    seg(7, 'finale', 'Finale'),
   ]
   const toQ = (list: typeof TRIVIA, segmentId: string): TriviaQ[] => list.map((q, i) => ({
     id: id(), segmentId, sortOrder: i + 1, prompt: q[0], options: q[1], correctIndex: q[2], category: q[3], timeLimitS: 10,
   }))
   const guess: GuessItem[] = GUESSES.map((g, i) => ({
-    id: id(), segmentId: segments[2]!.id, sortOrder: i + 1, answerDisplay: g[0], acceptedAnswers: g[1], focalX: g[2], focalY: g[3], cropPaths: [], fullPath: '', stepS: 5,
+    id: id(), segmentId: segments[3]!.id, sortOrder: i + 1, answerDisplay: g[0], acceptedAnswers: g[1], focalX: g[2], focalY: g[3], cropPaths: [], fullPath: '', stepS: 5,
     seedArt: g[4],
   } as GuessItem & { seedArt: string }))
 
@@ -72,12 +73,12 @@ export function buildSeed(): DB {
       state: {
         segmentId: null, itemIndex: -1, roundId: null, doneSegments: [], scoringPaused: false, partyPaused: false, pausedAt: null,
         presentation: null, spirit: 0, spiritGoal: 600, hintRevealed: false, themeStep: 0, raffleDeferred: false, conductor: null,
-        bingo: { open: false, called: [] },
+        bingo: { open: false, called: [] }, balls: defaultBalls(),
       },
       stateVersion: 1,
     },
     players: [], teams: [], segments,
-    trivia: [...toQ(TRIVIA, segments[1]!.id), ...toQ(TRIVIA2, segments[4]!.id)],
+    trivia: [...toQ(TRIVIA, segments[2]!.id), ...toQ(TRIVIA2, segments[5]!.id)],
     guess, ttl: [], rounds: [], answers: [], scoreEvents: [],
     prizes: PRIZES.map((p, i) => ({ id: id(), sortOrder: i + 1, name: p[0], tier: p[1], kind: p[2], notes: p[3], isMidnight: false, status: 'pending' as const })),
     draws: [], presentations: [], log: [],

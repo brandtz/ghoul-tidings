@@ -1,12 +1,12 @@
 // The pure half of ScoreService: pipeline modifiers and point formulas.
-export type ScoreSource = 'trivia' | 'guess' | 'ttl_participation' | 'ttl_spot' | 'ttl_fool' | 'bingo' | 'admin' | 'code' | 'powerup'
+export type ScoreSource = 'trivia' | 'guess' | 'ttl_participation' | 'ttl_spot' | 'ttl_fool' | 'bingo' | 'balls' | 'admin' | 'code' | 'powerup'
 
 export interface ScoreSettings {
   soloMultiplier: number
   caps: Record<string, number>
 }
 export const DEFAULT_CAPS: Record<string, number> = {
-  trivia: 2500, guess: 2500, ttl_participation: 2500, ttl_spot: 2500, ttl_fool: 2500, bingo: 2500, admin: 2500, code: 2000, powerup: 2000,
+  trivia: 2500, guess: 2500, ttl_participation: 2500, ttl_spot: 2500, ttl_fool: 2500, bingo: 2500, balls: 2500, admin: 2500, code: 2000, powerup: 2000,
   code_individual: 500, powerup_individual: 500,
 }
 

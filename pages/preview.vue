@@ -25,10 +25,11 @@ const base = (): PublicSnapshot => ({
     { name: 'Jo A.', avatarKey: 'skelly', prize: '$10 gift card', tier: 'swag', kind: 'raffle', at: Date.now() - 600000 },
   ],
   bingo: { open: false, called: [], winners: [], pending: 0 },
+  balls: { game: 0, status: 'idle', pattern: 'line', drawn: [], auto: false, everyS: 8, winners: [], history: [] },
   hintRevealed: hint.value,
   ttl: { opensAt: 0, closesAt: Date.now() + 3e6, open: true },
   top10: [], teams: [], spirit: { value: 120, goal: 600 }, present: 57, joined: 61, presentation: null, finale: null, flags: {}, eggBoard: null,
-  me: { id: 'me', name: 'You', avatarKey: 'skelly', isHost: false, teamId: null, teamName: null, score: 12840, rank: 23, ofPlayers: 57, answer: null, result: null, ttl: null, powerup: null, unlocks: { bag: false, console: false, bingo: false, legendary: false }, bingoCard: null, bingoClaim: null },
+  me: { id: 'me', name: 'You', avatarKey: 'skelly', isHost: false, teamId: null, teamName: null, score: 12840, rank: 23, ofPlayers: 57, answer: null, result: null, ttl: null, powerup: null, unlocks: { bag: false, console: false, bingo: false, legendary: false }, bingoCard: null, bingoClaim: null, balls: { card: null, won: false } },
 })
 const refresh = () => { store.snap = base() }
 onMounted(refresh)

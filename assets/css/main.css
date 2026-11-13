@@ -167,6 +167,11 @@ button:disabled { cursor: not-allowed; }
 /* Bingo keeps its 5 by 5 grid on phones, with smaller squares. */
 .stacked .bingo-grid { gap: 4px !important; }
 .stacked .bingo-grid button { min-height: 62px !important; font-size: 11px !important; padding: 2px !important; overflow-wrap: anywhere; }
+/* Ghoul Bingo on phones: balls above the card. */
+.stacked .balls-player { flex-direction: column !important; align-items: stretch !important; gap: 14px !important; }
+.stacked .balls-side { width: auto !important; flex-direction: row !important; flex-wrap: wrap; justify-content: center; padding-top: 0 !important; }
+.stacked .balls-grid button { height: 58px !important; font-size: 22px !important; }
+.stacked .balls-grid button.free-sq { font-size: 13px !important; }
 .stacked .tile { min-height: 72px; font-size: 22px; }
 .stacked .h-q { font-size: 28px !important; }
 

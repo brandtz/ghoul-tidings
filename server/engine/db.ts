@@ -4,6 +4,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
+import type { BallPattern } from '~~/shared/balls'
 import type { BingoClaimStatus, PrizeKind, PrizeTier, RoundPhase, ItemType, SegmentType } from '~~/shared/types'
 import { DEFAULT_CAPS } from '~~/shared/scoring'
 import { DEFAULT_BINGO_SQUARES } from '~~/shared/phase2'
@@ -19,7 +20,7 @@ export interface Settings {
   maxTeams: number
   soloMultiplier: number
   caps: Record<string, number>
-  points: { triviaBase: number; ttlParticipation: number; ttlSpot: number; ttlFool: number; ttlFoolMax: number; bingo: number; bingoFirst: number }
+  points: { triviaBase: number; ttlParticipation: number; ttlSpot: number; ttlFool: number; ttlFoolMax: number; bingo: number; bingoFirst: number; ballsWin: number }
   ttlOpensAt: number
   ttlClosesAt: number
   noRepeatWinners: boolean
@@ -46,7 +47,17 @@ export interface LiveState {
   conductor: { id: string; at: number } | null
   /** Opens when the bingo segment starts and stays open until the host closes it. */
   bingo: { open: boolean; called: string[] }
+  /** Ghoul Bingo, the 75-ball game run in the balls segment. */
+  balls: BallsState
 }
+export interface BallsState {
+  game: number; status: 'idle' | 'playing' | 'won'; pattern: BallPattern; drawn: number[]
+  auto: boolean; everyS: number; lastDrawAt: number; wonAt: number | null
+  winners: { playerId: string; ball: number; at: number }[]
+  falseCalls: number
+  history: { game: number; pattern: BallPattern; winners: string[]; balls: number }[]
+}
+export const defaultBalls = (): BallsState => ({ game: 0, status: 'idle', pattern: 'line', drawn: [], auto: false, everyS: 8, lastDrawAt: 0, wonAt: null, winners: [], falseCalls: 0, history: [] })
 export interface Party {
   id: string; slug: string; name: string; status: 'draft' | 'lobby' | 'live' | 'ended'
   scheduledStart: number; startedAt: number | null; durationMin: number; pausedMs: number
@@ -93,8 +104,10 @@ export function normalize(d: any): DB {
   s.bingoSquares ??= [...DEFAULT_BINGO_SQUARES]
   s.points.bingo ??= 1000
   s.points.bingoFirst ??= 500
+  s.points.ballsWin ??= 1500
   s.flags.teams ??= false
   d.party.state.bingo ??= { open: false, called: [] }
+  d.party.state.balls ??= defaultBalls()
   for (const p of d.prizes) p.kind ??= 'raffle'
   // Winners keep their prize now. Older saved offers count as won.
   for (const r of d.draws) if (r.status === 'offered') r.status = 'claimed'
@@ -146,7 +159,7 @@ export const defaultSettings = (start: number): Settings => ({
   maxTeams: 10,
   soloMultiplier: 1.5,
   caps: { ...DEFAULT_CAPS },
-  points: { triviaBase: 1000, ttlParticipation: 750, ttlSpot: 500, ttlFool: 100, ttlFoolMax: 2000, bingo: 1000, bingoFirst: 500 },
+  points: { triviaBase: 1000, ttlParticipation: 750, ttlSpot: 500, ttlFool: 100, ttlFoolMax: 2000, bingo: 1000, bingoFirst: 500, ballsWin: 1500 },
   ttlOpensAt: Date.now() - 3600_000,
   ttlClosesAt: start + 15 * 60000,
   noRepeatWinners: true,

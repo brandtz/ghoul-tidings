@@ -8,6 +8,7 @@ import { db, log, resetDb, teamsOn, uid, type Player } from './db'
 import { broadcast } from './bus'
 import { Conflict, Validation } from './errors'
 import { fireDueDraw } from './raffle'
+import { autoDraw } from './balls'
 import { currentRound, lockRound, segmentItems, currentSegment, submitAnswer, startSegment } from './rounds'
 import { ensureSeedImages } from './images'
 import { createTeam } from './teams'
@@ -69,6 +70,7 @@ export function tick(conductorId: string) {
   if (r?.phase === 'open' && now >= r.locksAt) lockRound()
   driveDemoCrowd()
   fireDueDraw()
+  autoDraw()
   return { active: true }
 }
 

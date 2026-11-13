@@ -93,6 +93,14 @@ export const useAdminStore = defineStore('admin', () => {
       if (b.called.length < b.pool.length) return { label: `Call square ${b.called.length + 1}`, reason, run: () => post('/api/admin/bingo/call') }
       return { label: 'End bingo segment', reason, run: () => post('/api/admin/segment/end', {}, true) }
     }
+    if (type === 'balls') {
+      // Ghoul Bingo: start a game, draw balls until someone wins, finish it, repeat. Three games, then move on.
+      const g = s.balls
+      if (g.status === 'playing') return { label: `Draw ball ${g.drawn.length + 1}`, disabled: g.drawn.length >= 75, reason: g.auto ? `Auto-draw is on, every ${g.everyS} s` : '', run: () => post('/api/admin/balls/draw') }
+      if (g.status === 'won') return { label: `Finish game ${g.game}`, reason: `Winner: ${g.winners.map((w: any) => w.name).join(', ')}. Same-ball claims stay open for 15 seconds.`, run: () => post('/api/admin/balls/finish') }
+      if (g.game < 3) return { label: `Start game ${g.game + 1}`, run: () => post('/api/admin/balls/new') }
+      return { label: 'End Ghoul Bingo', run: () => post('/api/admin/segment/end', {}, true) }
+    }
     if (type === 'presentation') {
       const p = st.presentation
       if (!p) return { label: 'Start slides', run: () => post('/api/admin/presentation/start', {}) }

@@ -129,3 +129,20 @@ describe('phase 2', () => {
     expect(bingoCard(DEFAULT_BINGO_SQUARES, 'x').filter(x => x !== 'FREE').sort()).toEqual([...DEFAULT_BINGO_SQUARES].sort())
   })
 })
+
+describe('Ghoul Bingo cards', () => {
+  it('deals five numbers per column from its range, FREE in the middle, same seed same card', async () => {
+    const { ballCard, meetsPattern, BALL_FREE } = await import('../shared/balls')
+    const card = ballCard('party:1:player')
+    expect(card).toHaveLength(25)
+    expect(card[BALL_FREE]).toBe(0)
+    for (let i = 0; i < 25; i++) if (i !== BALL_FREE) { const c = i % 5; expect(card[i]).toBeGreaterThanOrEqual(c * 15 + 1); expect(card[i]).toBeLessThanOrEqual(c * 15 + 15) }
+    expect(new Set(card).size).toBe(25)
+    expect(ballCard('party:1:player')).toEqual(card)
+    expect(ballCard('party:2:player')).not.toEqual(card)
+    expect(meetsPattern(new Set([10, 11, 13, 14]), 'line')).toBe(true)
+    expect(meetsPattern(new Set([0, 4, 20]), 'corners')).toBe(false)
+    expect(meetsPattern(new Set([0, 4, 20, 24]), 'corners')).toBe(true)
+    expect(meetsPattern(new Set([0, 1, 2, 3, 4]), 'blackout')).toBe(false)
+  })
+})

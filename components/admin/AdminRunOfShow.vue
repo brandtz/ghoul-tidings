@@ -25,6 +25,7 @@ const item = computed(() => c.value?.item)
 const nextItem = computed(() => c.value?.next ?? null)
 const correctShown = computed(() => r.value?.phase === 'revealed')
 const bingoSeg = computed(() => c.value?.segment.type === 'bingo')
+const ballsSeg = computed(() => c.value?.segment.type === 'balls')
 const bingoSide = computed(() => !bingoSeg.value && (s.value.bingo.open || s.value.bingo.claims.some((x: any) => x.status === 'pending')))
 </script>
 
@@ -83,8 +84,9 @@ const bingoSide = computed(() => !bingoSeg.value && (s.value.bingo.open || s.val
       </section>
 
       <AdminBingo v-if="bingoSeg" />
+      <AdminBalls v-if="ballsSeg" />
       <AdminBingo v-if="bingoSide" compact />
-      <section v-if="!bingoSeg" aria-label="Up next" class="bg-a-panel rounded-2xl flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto" style="padding:18px 22px">
+      <section v-if="!bingoSeg && !ballsSeg" aria-label="Up next" class="bg-a-panel rounded-2xl flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto" style="padding:18px 22px">
         <div class="flex items-center gap-3">
           <span class="a-eyebrow">{{ nextItem && r ? `Next · ${c.itemIndex + 2} of ${c.itemCount}` : item && !r ? `Ready · ${c.itemIndex + 1} of ${c.itemCount}` : 'Next' }}</span>
           <div class="flex-1" />
