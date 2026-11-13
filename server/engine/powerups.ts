@@ -2,14 +2,14 @@
 // Each use is a status_effects row that the score pipeline reads.
 import { randomInt } from 'node:crypto'
 import { POWERUPS, TRAILING_POOL, rankBand, type PowerupKind } from '~~/shared/phase2'
-import { db, log, uid, type Player } from './db'
+import { db, log, teamsOn, uid, type Player } from './db'
 import { broadcast } from './bus'
 import { Conflict, Validation } from './errors'
 import { activeEffect, teamBoard } from './scores'
 
 export function grantPowerups() {
   const d = db()
-  if (!d.party.settings.flags.powerups) return
+  if (!d.party.settings.flags.powerups || !teamsOn()) return
   const teams = teamBoard()
   teams.forEach((t, i) => {
     if (d.teamPowerups[t.id]) return
@@ -19,7 +19,7 @@ export function grantPowerups() {
 
 export function usePowerup(player: Player) {
   const d = db(); const now = Date.now()
-  if (!d.party.settings.flags.powerups) throw Conflict('Nothing happens')
+  if (!d.party.settings.flags.powerups || !teamsOn()) throw Conflict('Nothing happens')
   if (!player.teamId) throw Validation('Power-ups belong to teams')
   const kind = d.teamPowerups[player.teamId] as PowerupKind | undefined
   if (!kind) throw Validation('Your team has no power-up right now')

@@ -11,7 +11,7 @@ import { buildSeed } from './seed'
 import { type DB, normalize } from './db'
 import { publishOutbox } from './bus'
 
-const ARRAYS = ['players', 'teams', 'segments', 'trivia', 'guess', 'ttl', 'rounds', 'answers', 'scoreEvents', 'prizes', 'draws', 'presentations', 'log', 'codes', 'redemptions', 'statusEffects'] as const
+const ARRAYS = ['players', 'teams', 'segments', 'trivia', 'guess', 'ttl', 'rounds', 'answers', 'scoreEvents', 'prizes', 'draws', 'presentations', 'log', 'codes', 'redemptions', 'statusEffects', 'bingoClaims'] as const
 const META = ['party', 'teamPowerups', 'unlocks', 'bingoClaimed', 'attemptTimes', 'lastScoringCode', 'missedAttempts', 'rate', 'busLight'] as const
 const LOCK_KEY = 4242
 

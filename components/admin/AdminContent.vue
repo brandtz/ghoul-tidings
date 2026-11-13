@@ -1,27 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useNow } from '~/composables/useCountdown'
 import { useAdminStore } from '~/stores/admin'
 
 const admin = useAdminStore()
 const s = computed(() => admin.a)
-const tab = ref<'trivia' | 'guess' | 'ttl' | 'codes'>('ttl')
-const now = useNow(1000)
-const closesIn = computed(() => { const m = s.value.party.settings.ttlClosesAt - now.value; if (m <= 0) return 'closed'; const t = Math.floor(m / 1000); return t > 5400 ? `${Math.round(t / 3600)} h` : `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}` })
-const counts = computed(() => { const c: Record<string, number> = { approved: 0, pending: 0, hidden: 0 }; s.value.ttl.forEach((t: any) => { c[t.status]!++ }); return c })
-const chips: Record<string, [string, string]> = { approved: ['#10281C', '#6EE7A8'], pending: ['#3A2A12', '#FFB36B'], hidden: ['#1F232C', '#9AA3B2'] }
-
-// Two Truths
-const editing = ref<string | null>(null)
-const draft = ref<{ statements: string[]; lieIndex: number }>({ statements: [], lieIndex: 0 })
-const startEdit = (t: any) => { editing.value = t.id; draft.value = { statements: [...t.statements], lieIndex: t.lieIndex } }
-const saveEdit = async (t: any) => { await admin.content('ttl', 'edit', { id: t.id, ...draft.value }); editing.value = null }
-const moveTtl = (i: number, d: number) => {
-  const ids = s.value.ttl.map((t: any) => t.id); const j = i + d
-  if (j < 0 || j >= ids.length) return
-  [ids[i], ids[j]] = [ids[j], ids[i]]
-  admin.content('ttl', 'reorder', { ids })
-}
+const tab = ref<'trivia' | 'guess' | 'bingo' | 'codes'>('trivia')
 
 // Trivia
 const triviaSegs = computed(() => s.value.segments.filter((g: any) => g.type === 'trivia'))
@@ -64,54 +47,12 @@ const delGuess = async (g: any) => { if (await admin.confirm(`Delete ${g.answerD
   <div class="flex items-center gap-4">
     <h1 class="m-0 text-[28px] font-extrabold">Content</h1>
     <div role="tablist" class="flex gap-1.5 bg-a-panel rounded-xl" style="padding:4px">
-      <button v-for="t in [['trivia', 'Trivia'], ['guess', 'Guess the Thing'], ['ttl', 'Two Truths'], ['codes', 'Codes']]" :key="t[0]" role="tab" :aria-selected="tab === t[0]" class="border-0 text-base" style="min-height:44px;padding:0 20px;border-radius:9px" :style="tab === t[0] ? 'background:#2A2F3B;color:#fff;font-weight:800' : 'background:transparent;color:#C4CAD6;font-weight:700'" @click="tab = t[0] as any">{{ t[1] }}</button>
+      <button v-for="t in [['trivia', 'Trivia'], ['guess', 'Guess the Thing'], ['bingo', 'Bingo'], ['codes', 'Codes']]" :key="t[0]" role="tab" :aria-selected="tab === t[0]" class="border-0 text-base" style="min-height:44px;padding:0 20px;border-radius:9px" :style="tab === t[0] ? 'background:#2A2F3B;color:#fff;font-weight:800' : 'background:transparent;color:#C4CAD6;font-weight:700'" @click="tab = t[0] as any">{{ t[1] }}</button>
     </div>
     <div class="flex-1" />
-    <template v-if="tab === 'ttl'">
-      <span class="text-base font-bold text-a-soft">Window closes in <b style="color:#FFB36B">{{ closesIn }}</b></span>
-      <span class="text-base font-extrabold rounded-full" style="background:#10281C;color:#6EE7A8;padding:8px 16px">{{ counts.approved }} approved · {{ counts.pending }} pending · {{ counts.hidden }} hidden</span>
-    </template>
   </div>
 
-  <template v-if="tab === 'ttl'">
-    <div class="flex items-center gap-3 bg-a-panel rounded-xl text-[15px] font-semibold text-a-soft" style="padding:10px 16px">
-      <span class="font-extrabold text-a-accent whitespace-nowrap">Review tone:</span> keep it fun and work-appropriate, and skip anything about layoffs, pay or personal health. Approving pays +750 to the submitter; hiding pays nothing.
-    </div>
-    <div v-if="!s.ttl.length" class="text-a-muted font-bold">No submissions yet. They show up here as players send them.</div>
-    <div class="grid grid-cols-2 gap-3.5 content-start">
-      <article v-for="(t, i) in s.ttl" :key="t.id" class="bg-a-panel rounded-[14px] flex flex-col gap-2.5 box-border" style="padding:14px 16px" :style="{ border: `2px solid ${t.status === 'pending' ? '#FF7A1A' : 'transparent'}` }">
-        <div class="flex items-center gap-2.5">
-          <Avatar :avatar-key="t.avatarKey" :size="32" />
-          <span class="text-[17px] font-extrabold">{{ t.player }}</span><span class="text-sm font-semibold text-a-muted">{{ t.teamName }}</span>
-          <div class="flex-1" />
-          <span class="a-chip capitalize" :style="{ background: chips[t.status]![0], color: chips[t.status]![1] }">{{ t.status }}</span>
-        </div>
-        <template v-if="editing === t.id">
-          <div v-for="(_, n) in draft.statements" :key="n" class="flex gap-2 items-center">
-            <input v-model="draft.statements[n]" class="a-input" maxlength="120" :aria-label="`Statement ${n + 1}`">
-            <label class="flex items-center gap-1.5 text-[13px] font-bold whitespace-nowrap"><input v-model="draft.lieIndex" type="radio" :name="`lie-${t.id}`" :value="n">The lie</label>
-          </div>
-        </template>
-        <div v-else class="flex flex-col gap-1.5">
-          <div v-for="(l, n) in t.statements" :key="n" class="flex items-center gap-2.5 rounded-lg text-base font-semibold leading-snug box-border" style="min-height:40px;padding:6px 12px" :style="n === t.lieIndex ? 'background:#2A1519;border:2px solid #E0393E' : 'background:#1F232C;border:2px solid transparent'">
-            <span class="text-[13px] font-extrabold" style="min-width:60px" :style="{ color: n === t.lieIndex ? '#FF8F94' : '#9AA3B2' }">{{ n === t.lieIndex ? 'THE LIE' : 'Truth' }}</span>{{ l }}
-          </div>
-        </div>
-        <div class="flex gap-2">
-          <template v-if="editing === t.id"><button class="a-btn primary" @click="saveEdit(t)">Save</button><button class="a-btn" @click="editing = null">Cancel</button></template>
-          <template v-else>
-            <button v-if="t.status !== 'approved'" class="a-btn ok" @click="admin.content('ttl', 'approve', { id: t.id })">Approve +750</button>
-            <button class="a-btn" @click="startEdit(t)">Edit</button>
-            <button v-if="t.status !== 'hidden'" class="a-btn" @click="admin.content('ttl', 'hide', { id: t.id })">Hide</button>
-            <button v-else class="a-btn" @click="admin.content('ttl', 'pending', { id: t.id })">Unhide</button>
-          </template>
-          <div class="flex-1" />
-          <button class="a-btn" style="padding:0 12px" :aria-label="`Move ${t.player} earlier`" @click="moveTtl(i, -1)">↑</button>
-          <button class="a-btn" style="padding:0 12px" :aria-label="`Move ${t.player} later`" @click="moveTtl(i, 1)">↓</button>
-        </div>
-      </article>
-    </div>
-  </template>
+  <AdminBingoSquares v-if="tab === 'bingo'" />
 
   <AdminCodes v-else-if="tab === 'codes'" />
 

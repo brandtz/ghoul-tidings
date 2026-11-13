@@ -8,6 +8,7 @@ import { broadcast } from './bus'
 import { Conflict, NotFound, Validation } from './errors'
 import { applyScore } from './scores'
 import { fireDueDraw } from './raffle'
+import { openBingo } from './bingo'
 
 const OPEN_BUFFER_MS = 1500
 const RAFFLE_BEAT_MS = 8500
@@ -40,6 +41,7 @@ export function startSegment(segmentId?: string) {
   if (!seg) throw NotFound('No segment left to start')
   st.segmentId = seg.id; st.itemIndex = 0; st.roundId = null
   if (seg.type === 'finale') st.themeStep = 1
+  if (seg.type === 'bingo') openBingo()
   log('state', `Segment started: ${seg.title}`, { segmentId: seg.id }, 'host')
   broadcast('state.changed', { segment: seg.title })
   return seg

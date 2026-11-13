@@ -9,6 +9,8 @@ const f = computed(() => store.snap?.finale)
 const podium = computed(() => { const p = f.value?.podium ?? []; return [p[1], p[0], p[2]] })
 const heights = [150, 200, 120]
 const places = [2, 1, 3]
+const awards = computed(() => (f.value?.recap ?? []).filter(w => w.kind !== 'raffle').reverse())
+const raffle = computed(() => (f.value?.recap ?? []).filter(w => w.kind === 'raffle').reverse())
 </script>
 
 <template>
@@ -22,10 +24,15 @@ const places = [2, 1, 3]
           <div :style="{ height: `${heights[i]}px` }" style="width:100%;border-radius:12px 12px 0 0;background:#15172F;border:3px solid var(--border);border-bottom:0;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center">
             <div class="cinzel" style="font-size:40px;font-weight:900;color:var(--border2)">{{ places[i] }}</div>
             <div style="font-size:20px;font-weight:900">{{ r.score.toLocaleString() }}</div>
-            <div style="font-size:15px;font-weight:800;color:#FFD27A">Gift card</div>
           </div>
         </div>
       </template>
+    </div>
+    <div v-if="awards.length" style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+      <div v-for="a in awards" :key="a.at" style="display:flex;align-items:center;gap:10px;background:#15172F;border:3px solid var(--border);border-radius:14px;padding:8px 16px">
+        <Avatar :avatar-key="a.avatarKey" :size="44" ring="var(--border2)" />
+        <div style="text-align:left;line-height:1.2"><div style="font-size:20px;font-weight:900">{{ a.name }}</div><div style="font-size:16px;font-weight:800;color:#FFD27A">{{ a.prize }}</div></div>
+      </div>
     </div>
     <div v-if="f?.teams.length" style="display:flex;flex-direction:column;gap:6px;text-align:left">
       <div class="chip">Team race, finish line</div>
@@ -35,8 +42,8 @@ const places = [2, 1, 3]
         <span style="width:80px;text-align:right">{{ t.score.toLocaleString() }}</span>
       </div>
     </div>
-    <div v-if="f?.recap.length" style="font-size:18px;font-weight:700;color:#B9B6D6">
-      Raffle winners: {{ f.recap.map(w => w.name).join(', ') }}
+    <div v-if="raffle.length" style="font-size:18px;font-weight:700;color:#B9B6D6">
+      Raffle winners: {{ raffle.map(w => w.name).join(', ') }}
     </div>
     <div class="cinzel" style="font-size:26px;font-weight:700">Thanks for showing up for each other.</div>
   </div>

@@ -4,10 +4,10 @@ import type { H3Event } from 'h3'
 import { readBody } from 'h3'
 import type { ZodType } from 'zod'
 import { AVATAR_KEYS } from '~~/shared/catalog'
-import { db, log, resetDb, uid, type Player } from './db'
+import { db, log, resetDb, teamsOn, uid, type Player } from './db'
 import { broadcast } from './bus'
 import { Conflict, Validation } from './errors'
-import { expireClaims, fireDueDraw } from './raffle'
+import { fireDueDraw } from './raffle'
 import { currentRound, lockRound, segmentItems, currentSegment, submitAnswer, startSegment } from './rounds'
 import { ensureSeedImages } from './images'
 import { createTeam } from './teams'
@@ -69,32 +69,24 @@ export function tick(conductorId: string) {
   if (r?.phase === 'open' && now >= r.locksAt) lockRound()
   driveDemoCrowd()
   fireDueDraw()
-  expireClaims()
   return { active: true }
 }
 
 // ---- Demo crowd, for testing the show without sixty coworkers ----
 const NAMES = ['Dana K.', 'Marcus L.', 'Jo A.', 'Sam R.', 'Wei T.', 'Ines P.', 'Carlos M.', 'Nia B.', 'Theo G.', 'Ruth E.', 'Omar S.', 'Lena V.', 'Pat D.', 'Taylor M.', 'Morgan S.', 'Jamie L.', 'Chris P.', 'Alex R.']
-const TRUTHS = [
-  ['I once met a famous chef', 'I have run a half marathon', 'I have never seen a Star Wars movie'],
-  ['I speak three languages', 'I broke my arm skateboarding', 'I grew up on a boat'],
-  ['I can juggle five balls', 'I have a pet tortoise named Gerald', 'I once won a hot dog eating contest'],
-  ['I was an extra in a TV show', 'I can solve a Rubik\'s cube in a minute', 'I hate pumpkin pie'],
-]
 const isDemo = (p: Player) => p.emailHash.startsWith('demo:')
 
 export function addDemoCrowd() {
   const d = db()
   const names = NAMES.filter(n => !d.players.some(p => p.displayName === n))
-  const teams = d.teams.filter(t => !t.deletedAt).length ? [] : [['Pumpkin Patrol', 'jack', 'pumpkin'], ['Moonlit Mob', 'elfbat', 'violet'], ['Frost Bites', 'franken', 'frost'], ['Holly Jollies', 'skelly', 'holly']]
+  const teams = !teamsOn() || d.teams.filter(t => !t.deletedAt).length ? [] : [['Pumpkin Patrol', 'jack', 'pumpkin'], ['Moonlit Mob', 'elfbat', 'violet'], ['Frost Bites', 'franken', 'frost'], ['Holly Jollies', 'skelly', 'holly']]
   teams.forEach(([name, mascotKey, colorKey]) => createTeam(null, { name: name!, mascotKey: mascotKey!, colorKey: colorKey! }))
   const live = d.teams.filter(t => !t.deletedAt)
   names.forEach((n, i) => {
-    const team = i % 4 === 3 ? null : live[i % live.length]
+    const team = !teamsOn() || i % 4 === 3 ? null : live[i % live.length]
     const size = d.players.filter(p => p.teamId === team?.id).length
     const p: Player = { id: uid(), displayName: n, emailHash: `demo:${uid()}`, avatarKey: AVATAR_KEYS[i % AVATAR_KEYS.length]!, teamId: team && size < d.party.settings.teamCap ? team.id : null, isHost: false, removedAt: null, joinedAt: Date.now(), lastSeenAt: Date.now() }
     d.players.push(p)
-    if (i < TRUTHS.length) d.ttl.push({ id: uid(), playerId: p.id, statements: TRUTHS[i]!, lieIndex: i % 3, status: i < 2 ? 'approved' : 'pending', playOrder: i + 1, createdAt: Date.now() })
   })
   log('join', `${names.length} demo players joined`, {}, 'host')
   broadcast('state.changed', {})

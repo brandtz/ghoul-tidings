@@ -23,7 +23,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     <h2 class="h-display" style="font-size:32px">Leaderboard</h2>
     <div role="tablist" style="display:flex;gap:8px">
       <button role="tab" :aria-selected="tab === 'people'" class="btn-ghost" :style="tab === 'people' ? 'background:var(--border);color:#140A05' : ''" @click="tab = 'people'">Top 10</button>
-      <button role="tab" :aria-selected="tab === 'teams'" class="btn-ghost" :style="tab === 'teams' ? 'background:var(--border);color:#140A05' : ''" @click="tab = 'teams'">Team race</button>
+      <button v-if="store.snap?.flags.teams" role="tab" :aria-selected="tab === 'teams'" class="btn-ghost" :style="tab === 'teams' ? 'background:var(--border);color:#140A05' : ''" @click="tab = 'teams'">Team race</button>
       <button v-if="eggs" role="tab" :aria-selected="tab === 'eggs'" class="btn-ghost" :style="tab === 'eggs' ? 'background:var(--border);color:#140A05' : ''" @click="tab = 'eggs'">Egg hunt</button>
     </div>
     <div class="scroll" style="flex:1;display:flex;flex-direction:column;gap:6px">

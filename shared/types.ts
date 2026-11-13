@@ -2,8 +2,11 @@
 // secret (correct answers, the lie, accepted guesses) may appear before reveal.
 export type RoundPhase = 'open' | 'locked' | 'revealed'
 export type ItemType = 'trivia' | 'guess' | 'ttl'
-export type SegmentType = 'intermission' | 'trivia' | 'guess' | 'ttl' | 'presentation' | 'finale'
+export type SegmentType = 'intermission' | 'trivia' | 'guess' | 'ttl' | 'bingo' | 'presentation' | 'finale'
 export type PrizeTier = 'swag' | 'special' | 'grand'
+/** raffle: a random draw on the schedule. top_score and most_eggs are awarded by the host at the finale. */
+export type PrizeKind = 'raffle' | 'top_score' | 'most_eggs'
+export type BingoClaimStatus = 'pending' | 'approved' | 'rejected'
 
 export interface BoardRow { id: string; name: string; avatarKey: string; score: number; rank: number; teamName?: string | null }
 export interface TeamRow { id: string; name: string; mascotKey: string; colorKey: string; size: number; score: number; members: { name: string; avatarKey: string }[]; position: number; effects: string[] }
@@ -41,14 +44,14 @@ export interface Me {
   answer: MyAnswer | null
   result: MyResult | null
   ttl: { statements: string[]; lieIndex: number; status: string } | null
-  offer: { drawId: string; prizeName: string; tier: PrizeTier; deadline: number } | null
   powerup: string | null
   unlocks: { bag: boolean; console: boolean; bingo: boolean; legendary: boolean }
-  bingoClaimed: boolean
+  /** Present while bingo is open. Dabs live on the device until the player calls bingo. */
   bingoCard: string[] | null
+  bingoClaim: BingoClaimStatus | null
 }
 
-export interface WinnerEntry { name: string; avatarKey: string; prize: string; tier: PrizeTier }
+export interface WinnerEntry { name: string; avatarKey: string; prize: string; tier: PrizeTier; kind: PrizeKind; at: number }
 
 export interface PublicSnapshot {
   v: number
@@ -60,7 +63,9 @@ export interface PublicSnapshot {
   upNext: { type: SegmentType; title: string } | null
   round: PublicRound | null
   raffle: { nextDueAt: number | null; deferred: boolean; drawn: number; total: number; recent: WinnerEntry[] }
-  recentWinner: { name: string; avatarKey: string } | null
+  /** Every prize handed out so far, newest first: raffle draws and finale awards. */
+  winners: WinnerEntry[]
+  bingo: { open: boolean; called: string[]; winners: { name: string; avatarKey: string }[]; pending: number }
   hintRevealed: boolean
   ttl: { opensAt: number; closesAt: number; open: boolean }
   top10: BoardRow[]

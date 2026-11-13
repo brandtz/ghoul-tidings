@@ -6,7 +6,7 @@ import { compactVerify, importJWK } from 'jose'
 import { computed, ref, shallowRef } from 'vue'
 import type { BusMessage, PublicSnapshot } from '~~/shared/types'
 
-export interface RaffleMoment { drawId: string; winner: string; avatarKey: string; playerId: string; prize: string; tier: string; isMidnight: boolean; beat: number; reel: string[] }
+export interface RaffleMoment { drawId: string; winner: string; avatarKey: string; playerId: string; prize: string; tier: string; kind?: string; award?: string; detail?: string; isMidnight: boolean; beat: number; reel: string[] }
 export interface Toast { id: number; text: string; kind: 'treat' | 'trick' | 'info' }
 
 export const usePartyStore = defineStore('party', () => {

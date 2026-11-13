@@ -3,11 +3,12 @@
 import { guessValue, zoomStepAt } from '~~/shared/scoring'
 import { bingoCard } from '~~/shared/phase2'
 import type { Me, PublicRound, PublicSnapshot, WinnerEntry } from '~~/shared/types'
-import { db, type Player } from './db'
+import { db, teamOf, teamsOn, type Player } from './db'
 import { board, playerTotals, teamBoard } from './scores'
 import { GUESS_STEPS, currentRound, currentSegment, nextSegment, orderedSegments, segmentItems } from './rounds'
-import { nextPrize, prizeDue } from './raffle'
+import { nextPrize, prizeDue, rafflePrizes } from './raffle'
 import { eggBoard, hasUnlock } from './codes'
+import { bingoPublic, myBingoClaim } from './bingo'
 
 const PRESENCE_MS = () => db().party.settings.presenceMin * 60000
 export const presentCount = () => {
@@ -15,12 +16,12 @@ export const presentCount = () => {
   return db().players.filter(p => !p.removedAt && !p.isHost && now - p.lastSeenAt <= PRESENCE_MS()).length
 }
 
-function winners(): WinnerEntry[] {
+export function winners(): WinnerEntry[] {
   const d = db()
-  return d.draws.filter(x => x.status !== 'redrawn' && x.status !== 'expired').sort((a, b) => b.drawnAt - a.drawnAt).map((x) => {
+  return d.draws.filter(x => x.status === 'claimed').sort((a, b) => b.drawnAt - a.drawnAt).map((x) => {
     const pl = d.players.find(p => p.id === x.playerId)
     const pr = d.prizes.find(p => p.id === x.prizeId)
-    return { name: pl?.displayName ?? '?', avatarKey: pl?.avatarKey ?? 'skelly', prize: pr?.name ?? '', tier: pr?.tier ?? 'swag' }
+    return { name: pl?.displayName ?? '?', avatarKey: pl?.avatarKey ?? 'skelly', prize: pr?.name ?? '', tier: pr?.tier ?? 'swag', kind: pr?.kind ?? 'raffle', at: x.drawnAt }
   })
 }
 
@@ -62,25 +63,23 @@ function buildMe(p: Player, ranks: ReturnType<typeof board>, totals: Map<string,
     }
   }
   const t = d.ttl.find(x => x.playerId === p.id)
-  const offer = d.draws.find(x => x.playerId === p.id && x.status === 'offered')
-  const prize = offer ? d.prizes.find(x => x.id === offer.prizeId) : null
+  const teamId = teamOf(p)
   return {
     id: p.id, name: p.displayName, avatarKey: p.avatarKey, isHost: p.isHost,
-    teamId: p.teamId, teamName: d.teams.find(x => x.id === p.teamId)?.name ?? null,
+    teamId, teamName: d.teams.find(x => x.id === teamId)?.name ?? null,
     score: totals.get(p.id) ?? 0, rank: rank?.rank ?? 0, ofPlayers: ranks.length,
     answer, result,
     ttl: t ? { statements: t.statements, lieIndex: t.lieIndex, status: t.status } : null,
-    offer: offer && prize ? { drawId: offer.id, prizeName: prize.name, tier: prize.tier, deadline: offer.claimDeadline } : null,
-    powerup: p.teamId ? d.teamPowerups[p.teamId] ?? null : null,
+    powerup: teamId ? d.teamPowerups[teamId] ?? null : null,
     unlocks: { bag: hasUnlock(p.id, 'bag'), console: hasUnlock(p.id, 'console'), bingo: hasUnlock(p.id, 'bingo'), legendary: !!d.party.settings.flags.legendary && hasUnlock(p.id, 'legendary') },
-    bingoClaimed: d.bingoClaimed.includes(p.id),
-    bingoCard: d.party.settings.flags.bingo && hasUnlock(p.id, 'bingo') ? bingoCard(d.party.settings.bingoSquares, p.id) : null,
+    bingoCard: d.party.state.bingo.open ? bingoCard(d.party.settings.bingoSquares, p.id) : null,
+    bingoClaim: myBingoClaim(p.id),
   }
 }
 
 export function snapshot(player: Player | null): PublicSnapshot {
   const d = db(); const { party } = d; const st = party.state; const s = party.settings
-  const ranks = board(); const totals = playerTotals(); const teams = teamBoard()
+  const ranks = board(); const totals = playerTotals(); const teams = teamsOn() ? teamBoard() : []
   const seg = currentSegment()
   const segs = orderedSegments()
   const next = nextSegment()
@@ -88,7 +87,6 @@ export function snapshot(player: Player | null): PublicSnapshot {
   const now = Date.now()
   const recent = winners()
   const pres = st.presentation ? d.presentations.find(x => x.id === st.presentation!.id) : null
-  const latest = recent[0]
   return {
     v: party.stateVersion,
     serverNow: now,
@@ -101,11 +99,12 @@ export function snapshot(player: Player | null): PublicSnapshot {
     raffle: {
       nextDueAt: party.status === 'live' && prize ? prizeDue(prize) : null,
       deferred: st.raffleDeferred,
-      drawn: d.prizes.filter(x => x.status === 'drawn' || x.status === 'claimed').length,
-      total: d.prizes.length,
+      drawn: rafflePrizes().filter(x => x.status === 'claimed').length,
+      total: rafflePrizes().length,
       recent: recent.slice(0, 5),
     },
-    recentWinner: latest ? { name: latest.name, avatarKey: latest.avatarKey } : null,
+    winners: recent,
+    bingo: bingoPublic(),
     hintRevealed: st.hintRevealed,
     ttl: { opensAt: s.ttlOpensAt, closesAt: s.ttlClosesAt, open: now >= s.ttlOpensAt && now < s.ttlClosesAt },
     top10: ranks.slice(0, 10),

@@ -9,7 +9,7 @@ const admin = useAdminStore()
 const party = usePartyStore()
 const NAV = [
   ['run-of-show', 'Run of show', '▶'], ['content', 'Content', '☰'], ['raffle', 'Prizes and raffle', '🎁'], ['theme', 'Theme', '◐'],
-  ['players', 'Players and teams', '☺'], ['monitor', 'Live monitor', '≋'], ['effects', 'Effects soundboard', '⚡'], ['presentation', 'Presentation', '▭'], ['settings', 'Settings', '⚙'],
+  ['players', 'Players', '☺'], ['monitor', 'Live monitor', '≋'], ['effects', 'Effects soundboard', '⚡'], ['presentation', 'Presentation', '▭'], ['settings', 'Settings', '⚙'],
 ]
 
 function onKey(e: KeyboardEvent) {

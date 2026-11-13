@@ -1,5 +1,16 @@
 # Build status
 
+## Solo party, gift card prizes and bingo (Nov 12, 2026)
+
+- **Teams are a setting, off by default** (Settings, Teams). Off: everyone plays solo; team sign-up, the team race, team codes, power-ups and the solo multiplier are hidden. Existing teams are kept and come back if teams are turned on.
+- **Recognition slides removed** from the running order. The Presentation section still exists for when a deck arrives.
+- **No claim window.** A drawn winner keeps the prize at once. Redraw (no-shows) and Unskip remain.
+- **Winners list.** The player rail shows every winner and prize, newest first. The host sees the same list on Prizes and raffle and in the Live column.
+- **Default prizes** ($150 for 90 minutes): ten $10 random draws, one about every 8 minutes; a $20 Most eggs found award and a $30 Best score award, given at the finale (Space in Run of show awards them in order, then ends the party). Ties go to whoever got there first. Reset party restores these.
+- **Bingo replaces Two Truths.** The Meeting Bingo segment opens bingo for everyone. The host calls squares (Space, random or a picked square), players dab their own cards and press Bingo!, and the host reviews each card in Run of show with each dab marked called or not. Approval pays 1,000, plus 500 for the first bingo. Bingo stays open until the host closes it. Squares are edited under Content, Bingo.
+
+Not yet run: the two Playwright scripts in `tests/e2e`, which were updated for these changes.
+
 ## Phase 2
 
 Built behind flags, off by default, switched on under Content, Codes. It follows the Phase 2 outline in the architecture doc. No separate Phase 2 spec exists yet.

@@ -93,7 +93,7 @@ export const CONTENT: Record<string, Record<string, Handler>> = {
   },
   prizes: {
     save(raw) {
-      const p = z.object({ id: z.string().optional(), name: z.string().min(1), tier: z.enum(['swag', 'special', 'grand']), notes: z.string().default(''), isMidnight: z.boolean().default(false) }).parse(raw)
+      const p = z.object({ id: z.string().optional(), name: z.string().min(1), tier: z.enum(['swag', 'special', 'grand']), kind: z.enum(['raffle', 'top_score', 'most_eggs']).default('raffle'), notes: z.string().default(''), isMidnight: z.boolean().default(false) }).parse(raw)
       const d = db()
       if (p.isMidnight) d.prizes.forEach((x) => { x.isMidnight = false })
       if (p.id) Object.assign(d.prizes.find(x => x.id === p.id) ?? {}, p)

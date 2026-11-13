@@ -37,7 +37,7 @@ const type = async (p, s) => { await p.locator('body').click({ position: { x: 5,
 
   await api(a, '/api/teams', { name: 'Alpha', mascotKey: 'jack', colorKey: 'pumpkin' })
   await api(c, '/api/teams', { name: 'Cobalt', mascotKey: 'cat', colorKey: 'frost' })
-  await api(host, '/api/admin/content/settings/save', { flags: { eggs: true, cheatSheet: true, powerups: true, eggHunt: true, bingo: true } }); await wait(500)
+  await api(host, '/api/admin/content/settings/save', { flags: { teams: true, eggs: true, cheatSheet: true, powerups: true, eggHunt: true } }); await wait(500)
   await api(host, '/api/admin/hint'); await wait(600)
   const codesAdmin = (await adm()).codes
   check(codesAdmin.filter(x => x.team).length >= 4, 'teams received private codes')
@@ -134,15 +134,11 @@ const type = async (p, s) => { await p.locator('body').click({ position: { x: 5,
   }
   console.log(`timed power-ups exercised: ${[...tested]}`)
 
-  // Bingo.
-  await type(a, word('unlock_bingo')); await wait(300)
-  check((await stateOf(a)).me.unlocks.bingo, 'bingo unlocks')
-  check(await a.locator('[aria-label="Meeting bingo"]').isVisible(), 'bingo card pops open on unlock')
-  for (const n of [10, 11, 13, 14]) await a.locator('[aria-label="Meeting bingo"] .tile-grid button').nth(n).click()
-  await a.screenshot({ path: `${OUT}/p2-bingo.png` })
-  await a.click('button:has-text("Call bingo")'); await wait(700)
-  check((await stateOf(a)).me.bingoClaimed, 'bingo claim recorded')
+  // Bingo is now its own segment (host opens it, calls squares, reviews claims), not a code unlock.
+  await api(host, '/api/admin/bingo/open'); await wait(500)
+  check(!!(await stateOf(a)).me.bingoCard, 'bingo card appears when the host opens bingo')
   await a.keyboard.press('Escape')
+  await api(host, '/api/admin/bingo/close')
 
   await host.goto(B + '/admin/content'); await wait(1500)
   await host.click('button:text-is("Codes")'); await wait(500)

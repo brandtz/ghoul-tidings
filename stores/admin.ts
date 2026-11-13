@@ -73,7 +73,26 @@ export const useAdminStore = defineStore('admin', () => {
     }
     const type = c.segment.type
     if (type === 'intermission') return { label: 'End intermission', run: () => post('/api/admin/segment/end', {}, true) }
-    if (type === 'finale') return { label: 'End party', run: () => post('/api/admin/party/end', {}, true) }
+    if (type === 'finale') {
+      // Finale awards first, in prize order, then the party ends.
+      const award = s.prizes.find((p: any) => p.kind !== 'raffle' && p.status === 'pending')
+      if (award) {
+        const who = award.leader ? `${award.leader.name} (${award.leader.detail})` : 'nobody yet'
+        return {
+          label: `Award ${award.awardTitle}`, disabled: !award.leader, reason: award.leader ? `Goes to ${who}${award.leader.tied.length ? `, tie broken over ${award.leader.tied.join(', ')} by who got there first` : ''}` : 'Nobody qualifies yet',
+          run: async () => { if (await confirm(`Award ${award.name} to ${who}?`, 'Award')) post(`/api/admin/raffle/${award.id}/draw`) },
+        }
+      }
+      return { label: 'End party', run: () => post('/api/admin/party/end', {}, true) }
+    }
+    if (type === 'bingo') {
+      const b = s.bingo
+      if (!b.open) return { label: 'Open bingo', run: () => post('/api/admin/bingo/open') }
+      const waiting = b.claims.filter((x: any) => x.status === 'pending').length
+      const reason = waiting ? `${waiting} bingo ${waiting === 1 ? 'card' : 'cards'} waiting for review below` : ''
+      if (b.called.length < b.pool.length) return { label: `Call square ${b.called.length + 1}`, reason, run: () => post('/api/admin/bingo/call') }
+      return { label: 'End bingo segment', reason, run: () => post('/api/admin/segment/end', {}, true) }
+    }
     if (type === 'presentation') {
       const p = st.presentation
       if (!p) return { label: 'Start slides', run: () => post('/api/admin/presentation/start', {}) }

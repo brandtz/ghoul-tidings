@@ -18,6 +18,8 @@ const stateLabel = computed(() => {
   if (!x.current) return 'Intermission'
   return `${x.current.segment.title}${x.current.round ? ` · ${x.current.round.phase}` : ''}`
 })
+const bingoWaiting = computed(() => (s.value?.bingo.claims ?? []).filter((c: any) => c.status === 'pending').length)
+const time = (t: number) => new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 async function broadcastMessage() {
   const text = window.prompt('Message for every screen (80 characters)')
   if (text) admin.post('/api/admin/effect', { key: 'banner', text: text.slice(0, 80) })
@@ -40,12 +42,24 @@ async function broadcastMessage() {
       <div class="rounded-xl bg-a-panel" style="padding:12px 14px"><div class="text-[13px] font-bold text-a-muted">Conductor</div><div class="text-[18px] font-extrabold" :style="{ color: admin.conductor.ok ? '#6EE7A8' : '#FF8F94' }">{{ admin.conductor.label }}</div></div>
     </div>
     <div v-if="s.nextPrize" class="rounded-xl bg-a-panel flex flex-col gap-1" style="padding:14px 16px">
-      <div class="text-[13px] font-bold text-a-muted uppercase" style="letter-spacing:.06em">Next raffle · draw {{ s.nextPrize.index }} of {{ s.prizes.length }}</div>
+      <div class="text-[13px] font-bold text-a-muted uppercase" style="letter-spacing:.06em">Next raffle · draw {{ s.nextPrize.index }} of {{ s.raffleCount }}</div>
       <div class="flex items-baseline gap-3">
-        <span class="text-[18px] font-extrabold truncate capitalize">{{ s.nextPrize.tier }} · {{ s.nextPrize.name }}</span>
+        <span class="text-[18px] font-extrabold truncate">{{ s.nextPrize.name }}</span>
         <span class="text-[28px] font-extrabold ml-auto">{{ s.party.status === 'live' ? fmt(s.nextPrize.dueAt - now) : '—' }}</span>
       </div>
       <div class="text-sm font-semibold text-a-muted">{{ st.raffleDeferred ? 'Waiting for the reveal' : 'Waits for the reveal if a round is open' }}</div>
+    </div>
+    <NuxtLink v-if="bingoWaiting" to="/admin/run-of-show" class="rounded-xl font-extrabold text-base no-underline flex items-center justify-center" style="min-height:52px;background:#3A2A12;color:#FFB36B;border:2px solid #FF7A1A">{{ bingoWaiting }} bingo {{ bingoWaiting === 1 ? 'card' : 'cards' }} to review →</NuxtLink>
+    <div class="rounded-xl bg-a-panel flex flex-col gap-1" style="padding:12px 14px">
+      <div class="text-[13px] font-bold text-a-muted uppercase" style="letter-spacing:.06em">Winners so far · {{ s.winners.length }}</div>
+      <div v-if="!s.winners.length" class="text-sm font-semibold text-a-muted">Nobody yet.</div>
+      <div class="flex flex-col gap-0.5 overflow-y-auto" style="max-height:220px">
+        <div v-for="w in s.winners" :key="w.at" class="flex items-baseline gap-2 text-[15px]" style="min-height:26px">
+          <span class="font-extrabold truncate">{{ w.name }}</span>
+          <span class="font-semibold truncate" style="color:#FFD27A">{{ w.prize }}</span>
+          <span class="ml-auto text-[13px] font-semibold text-a-muted whitespace-nowrap">{{ time(w.at) }}</span>
+        </div>
+      </div>
     </div>
     <div class="flex-1" />
     <div class="a-eyebrow">Panic controls</div>

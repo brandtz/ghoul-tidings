@@ -16,10 +16,10 @@ const showTeams = ref(false)
       <div v-if="store.snap?.raffle.recent.length" style="display:flex;flex-direction:column;gap:6px;align-items:center">
         <div class="chip">Recent raffle winners</div>
         <div style="display:flex;gap:18px;flex-wrap:wrap;justify-content:center">
-          <span v-for="w in store.snap.raffle.recent.slice(0, 3)" :key="w.name + w.prize" style="display:flex;align-items:center;gap:8px;font-size:20px;font-weight:800"><Avatar :avatar-key="w.avatarKey" :size="36" />{{ w.name }}</span>
+          <span v-for="w in store.snap.raffle.recent.slice(0, 3)" :key="w.name + w.at" style="display:flex;align-items:center;gap:8px;font-size:20px;font-weight:800"><Avatar :avatar-key="w.avatarKey" :size="36" />{{ w.name }} <span style="font-size:16px;color:#B9B6D6">{{ w.prize }}</span></span>
         </div>
       </div>
-      <button v-if="!stage" class="btn-ghost" style="align-self:center" @click="showTeams = true">Change team</button>
+      <button v-if="!stage && store.snap?.flags.teams" class="btn-ghost" style="align-self:center" @click="showTeams = true">Change team</button>
     </template>
     <template v-else>
       <TeamPanel />

@@ -15,6 +15,7 @@ const view = computed(() => {
   if (x.party.status !== 'live') return 'lobby'
   if (x.presentation) return 'slides'
   if (x.round) return x.round.itemType
+  if (x.segment?.type === 'bingo') return 'bingo'
   if (x.segment && x.segment.itemCount > 0) return 'ready'
   return 'intermission'
 })
@@ -37,6 +38,7 @@ watch(view, () => window.scrollTo(0, 0))
   <TriviaGame v-else-if="view === 'trivia'" :key="s!.round!.id" :stage="stage" />
   <GuessGame v-else-if="view === 'guess'" :key="s!.round!.id" :stage="stage" />
   <TruthsGame v-else-if="view === 'ttl'" :key="s!.round!.id" :stage="stage" />
+  <BingoGame v-else-if="view === 'bingo'" :stage="stage" />
   <div v-else-if="view === 'ready'" class="screen" style="align-items:center;justify-content:center;text-align:center">
     <div class="chip">{{ s!.segment!.title }}</div>
     <h1 class="h-display" style="font-size:52px">Get ready</h1>

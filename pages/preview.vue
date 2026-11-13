@@ -19,11 +19,16 @@ const base = (): PublicSnapshot => ({
     id: 'x', itemType: 'trivia', phase: 'open', opensAt: Date.now() - 4000, locksAt: Date.now() + 6000, index: 3, total: 12, answeredCount: 34,
     trivia: { prompt: 'Which holiday song begins with "Chestnuts roasting on an open fire"?', options: ['The Christmas Song', 'Jingle Bells', 'Silent Night', 'Deck the Halls'], category: 'Holiday Music', timeLimitS: 10 },
   } : null,
-  raffle: { nextDueAt: Date.now() + 138000, deferred: false, drawn: 2, total: 8, recent: [] },
-  recentWinner: { name: 'Taylor M.', avatarKey: 'twinkle' }, hintRevealed: hint.value,
+  raffle: { nextDueAt: Date.now() + 138000, deferred: false, drawn: 2, total: 10, recent: [] },
+  winners: [
+    { name: 'Taylor M.', avatarKey: 'twinkle', prize: '$10 gift card', tier: 'swag', kind: 'raffle', at: Date.now() - 60000 },
+    { name: 'Jo A.', avatarKey: 'skelly', prize: '$10 gift card', tier: 'swag', kind: 'raffle', at: Date.now() - 600000 },
+  ],
+  bingo: { open: false, called: [], winners: [], pending: 0 },
+  hintRevealed: hint.value,
   ttl: { opensAt: 0, closesAt: Date.now() + 3e6, open: true },
   top10: [], teams: [], spirit: { value: 120, goal: 600 }, present: 57, joined: 61, presentation: null, finale: null, flags: {}, eggBoard: null,
-  me: { id: 'me', name: 'You', avatarKey: 'skelly', isHost: false, teamId: null, teamName: null, score: 12840, rank: 23, ofPlayers: 57, answer: null, result: null, ttl: null, offer: null, powerup: null, unlocks: { bag: false, console: false, bingo: false, legendary: false }, bingoClaimed: false, bingoCard: null },
+  me: { id: 'me', name: 'You', avatarKey: 'skelly', isHost: false, teamId: null, teamName: null, score: 12840, rank: 23, ofPlayers: 57, answer: null, result: null, ttl: null, powerup: null, unlocks: { bag: false, console: false, bingo: false, legendary: false }, bingoCard: null, bingoClaim: null },
 })
 const refresh = () => { store.snap = base() }
 onMounted(refresh)

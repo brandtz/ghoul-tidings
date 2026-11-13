@@ -1,10 +1,13 @@
 // Host-only view of the party. Contains answers, so it is never sent to a player
 // and the stage thumbnail must keep reading the public snapshot instead.
-import { db } from './db'
+import { BINGO_FREE } from '~~/shared/phase2'
+import { db, teamsOn } from './db'
 import { clientCount } from './bus'
 import { lastAction, playerTotals, teamBoard } from './scores'
 import { currentRound, currentSegment, orderedSegments, segmentItems } from './rounds'
-import { midnightPrizeId, nextPrize, orderedPrizes, prizeDue } from './raffle'
+import { AWARD_TITLE, awardLeader, midnightPrizeId, nextPrize, orderedPrizes, prizeDue, rafflePrizes } from './raffle'
+import { checkClaim } from './bingo'
+import { winners } from './snapshot'
 import { presentCount } from './snapshot'
 
 function itemDetail(id?: string, type?: string) {
@@ -33,7 +36,7 @@ export function adminState() {
     segments: ordered.map((s) => {
       const list = segmentItems(s)
       const status = s.id === seg?.id ? 'Live' : st.doneSegments.includes(s.id) ? 'Done' : s.id === nextSeg?.id ? 'Up next' : s.type === 'finale' ? 'Locked' : 'Ready'
-      const sub = s.type === 'trivia' ? `${list.length} questions` : s.type === 'guess' ? `${list.length} images · 5 s per zoom` : s.type === 'ttl' ? `${list.length} approved · 20 s each` : s.type === 'presentation' ? 'Slides' : s.type === 'finale' ? 'Podium, finish line, recap' : 'Join card on stage'
+      const sub = s.type === 'trivia' ? `${list.length} questions` : s.type === 'guess' ? `${list.length} images · 5 s per zoom` : s.type === 'ttl' ? `${list.length} approved · 20 s each` : s.type === 'bingo' ? (st.bingo.open ? `Open · ${st.bingo.called.length} called` : 'Opens bingo for everyone') : s.type === 'presentation' ? 'Slides' : s.type === 'finale' ? 'Podium, finish line, recap' : 'Join card on stage'
       return { id: s.id, type: s.type, title: s.title, status, sub: s.id === seg?.id && list.length ? `${sub} · now on ${st.itemIndex + 1}` : sub, itemCount: list.length }
     }),
     current: seg ? {
@@ -48,13 +51,25 @@ export function adminState() {
       const p = d.players.find(x => x.id === t.playerId)
       return { ...t, player: p?.displayName ?? '?', avatarKey: p?.avatarKey ?? 'skelly', teamName: d.teams.find(x => x.id === p?.teamId)?.name ?? 'Lone wolf' }
     }).sort((a, b) => a.playOrder - b.playOrder),
-    prizes: orderedPrizes().map((p, i) => {
-      const draw = [...d.draws].reverse().find(x => x.prizeId === p.id)
-      return { ...p, index: i + 1, dueAt: prizeDue(p), isMidnightDraw: p.id === mid, draw: draw ? { id: draw.id, status: draw.status, claimDeadline: draw.claimDeadline, eligibleCount: draw.eligibleCount, winner: d.players.find(x => x.id === draw.playerId)?.displayName ?? '?' } : null }
+    prizes: orderedPrizes().map((p) => {
+      const draw = [...d.draws].reverse().find(x => x.prizeId === p.id && x.status !== 'redrawn')
+      const lead = p.kind !== 'raffle' && p.status === 'pending' ? awardLeader(p.kind) : null
+      return {
+        ...p, index: p.kind === 'raffle' ? rafflePrizes().findIndex(x => x.id === p.id) + 1 : 0, dueAt: prizeDue(p), isMidnightDraw: p.id === mid,
+        awardTitle: AWARD_TITLE[p.kind] ?? null,
+        leader: lead ? { name: lead.player.displayName, detail: lead.detail, tied: lead.tied } : null,
+        draw: draw ? { id: draw.id, status: draw.status, drawnAt: draw.drawnAt, eligibleCount: draw.eligibleCount, winner: d.players.find(x => x.id === draw.playerId)?.displayName ?? '?' } : null,
+      }
     }),
-    nextPrize: prize ? { id: prize.id, name: prize.name, tier: prize.tier, dueAt: prizeDue(prize), index: orderedPrizes().findIndex(x => x.id === prize.id) + 1 } : null,
+    winners: winners(),
+    nextPrize: prize ? { id: prize.id, name: prize.name, tier: prize.tier, dueAt: prizeDue(prize), index: rafflePrizes().findIndex(x => x.id === prize.id) + 1 } : null,
+    raffleCount: rafflePrizes().length,
+    bingo: {
+      ...st.bingo, pool: party.settings.bingoSquares, free: BINGO_FREE,
+      claims: d.bingoClaims.map(c => ({ ...c, player: d.players.find(p => p.id === c.playerId)?.displayName ?? '?', ...checkClaim(c) })).sort((a, b) => b.createdAt - a.createdAt),
+    },
     players: d.players.map(p => ({
-      id: p.id, name: p.displayName, avatarKey: p.avatarKey, teamId: p.teamId, teamName: d.teams.find(t => t.id === p.teamId)?.name ?? 'Lone wolf',
+      id: p.id, name: p.displayName, avatarKey: p.avatarKey, teamId: p.teamId, teamName: teamsOn() ? d.teams.find(t => t.id === p.teamId)?.name ?? 'Lone wolf' : 'Solo',
       score: totals.get(p.id) ?? 0, lastSeenAt: p.lastSeenAt, joinedAt: p.joinedAt, removed: !!p.removedAt, isHost: p.isHost,
       status: p.removedAt ? 'Removed' : now - p.lastSeenAt <= party.settings.presenceMin * 60000 ? 'Present' : 'Away',
     })).sort((a, b) => b.score - a.score),

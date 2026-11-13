@@ -88,16 +88,10 @@ const api = (p, url, body = {}) => p.evaluate(async ([u, b]) => { const r = awai
   check(after.raffle.drawn >= 1 && !after.raffle.deferred, 'draw fired right after the reveal')
   check(after.theme.p > 0, `theme stepped to ${after.theme.p.toFixed(3)}`)
 
-  // Claim flow: find the winner's page.
+  // No claim step: the winner keeps the prize and shows up in the running winners list.
   await wait(2200)
-  const pages = [p1, p2, phone, small]; let winner = null
-  for (const p of pages) if ((await stateOf(p)).me.offer) winner = p
-  check(!!winner, 'one real player holds the prize offer')
-  if (winner) {
-    await winner.screenshot({ path: `${OUT}/p-claim.png` })
-    await winner.click('button:has-text("Claim it")'); await wait(800)
-    check((await stateOf(winner)).me.offer === null, 'claim accepted')
-  }
+  check(after.winners.length >= 1, `winners list has ${after.winners.length}`)
+  check(await p1.locator('button:has-text("Claim")').count() === 0, 'no claim button anywhere')
   await api(host, '/api/admin/content/settings/save', { durationMin: 60 }); await wait(300)
   for (const pr of (await host.evaluate(() => fetch('/api/admin/state').then(r => r.json()))).prizes) if (pr.status === 'pending') await api(host, `/api/admin/raffle/${pr.id}/skip`)
 

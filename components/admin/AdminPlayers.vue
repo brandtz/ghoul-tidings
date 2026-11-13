@@ -14,6 +14,7 @@ const sel = computed(() => s.value.players.find((p: any) => p.id === selId.value
 const amount = ref('+500'); const reason = ref('')
 const amt = computed(() => Number(amount.value.replace('+', '')) || 0)
 const seen = (t: number) => { const m = Math.round((now.value - t) / 1000); return m < 5 ? 'now' : m < 60 ? `${m} s` : `${Math.round(m / 60)} min` }
+const teams = computed(() => !!s.value.party.settings.flags.teams)
 const solo = computed(() => s.value.players.filter((p: any) => !p.teamId && !p.removed).length)
 async function apply() {
   if (await admin.post('/api/admin/scores/adjust', { playerId: sel.value.id, amount: amt.value, reason: reason.value })) { reason.value = ''; admin.flash('Score adjusted') }
@@ -25,24 +26,24 @@ const editTeam = ref<any>(null)
 const openTeam = (t: any) => { editTeam.value = { id: t.id, name: t.name, colorKey: t.colorKey } }
 const saveTeam = async () => { if (await admin.content('teams', 'save', editTeam.value)) editTeam.value = null }
 const disband = async () => { if (await admin.confirm(`Disband ${editTeam.value.name}? Members become lone wolves.`, 'Disband')) { await admin.content('teams', 'disband', { id: editTeam.value.id }); editTeam.value = null } }
-const cols = 'grid-template-columns:44px 1.2fr 1fr 90px 90px 100px'
+const cols = computed(() => (teams.value ? 'grid-template-columns:44px 1.2fr 1fr 90px 90px 100px' : 'grid-template-columns:44px 1.6fr 90px 90px 100px'))
 </script>
 
 <template>
   <div class="flex items-center gap-4">
-    <h1 class="m-0 text-[28px] font-extrabold">Players and teams</h1>
-    <span class="text-base font-bold text-a-muted">{{ s.present }} present · {{ s.players.length }} joined · {{ s.teams.length }} teams · {{ solo }} lone wolves</span>
+    <h1 class="m-0 text-[28px] font-extrabold">{{ teams ? 'Players and teams' : 'Players' }}</h1>
+    <span class="text-base font-bold text-a-muted">{{ s.present }} present · {{ s.players.length }} joined<template v-if="teams"> · {{ s.teams.length }} teams · {{ solo }} lone wolves</template><template v-else> · teams are off, everyone plays solo</template></span>
     <div class="flex-1" />
     <input v-model="q" class="a-input" style="width:260px;background:#171A21" placeholder="Search players" aria-label="Search players">
   </div>
   <div class="grid gap-[18px] flex-1 min-h-0" style="grid-template-columns:minmax(0,1fr) 400px">
     <section aria-label="Players" class="bg-a-panel rounded-[14px] flex flex-col gap-1 overflow-y-auto" style="padding:12px 14px">
-      <div class="grid gap-2.5 text-[13px] font-extrabold text-a-muted uppercase" :style="cols" style="padding:0 10px 6px;letter-spacing:.06em"><span /><span>Name</span><span>Team</span><span>Score</span><span>Last seen</span><span>Status</span></div>
+      <div class="grid gap-2.5 text-[13px] font-extrabold text-a-muted uppercase" :style="cols" style="padding:0 10px 6px;letter-spacing:.06em"><span /><span>Name</span><span v-if="teams">Team</span><span>Score</span><span>Last seen</span><span>Status</span></div>
       <div v-if="!players.length" class="text-a-muted font-bold" style="padding:14px">No players yet. Settings has a demo crowd for testing.</div>
       <button v-for="p in players" :key="p.id" class="grid gap-2.5 items-center rounded-[10px] text-left text-a-text box-border" :style="[cols, { background: selId === p.id ? '#1F232C' : 'transparent', border: `2px solid ${selId === p.id ? '#FF7A1A' : 'transparent'}` }]" style="min-height:52px;padding:0 10px" @click="selId = p.id">
         <Avatar :avatar-key="p.avatarKey" :size="32" />
         <span class="text-base font-bold truncate">{{ p.name }}<span v-if="p.isHost" class="text-a-muted"> · host</span></span>
-        <span class="text-[15px] font-semibold text-a-soft truncate">{{ p.teamName }}</span>
+        <span v-if="teams" class="text-[15px] font-semibold text-a-soft truncate">{{ p.teamName }}</span>
         <span class="text-base font-extrabold">{{ p.score.toLocaleString() }}</span>
         <span class="text-sm font-semibold text-a-muted">{{ seen(p.lastSeenAt) }}</span>
         <span class="a-chip" :style="p.status === 'Present' ? 'background:#10281C;color:#6EE7A8' : 'background:#2B2412;color:#FFD27A'">{{ p.status }}</span>
@@ -50,10 +51,10 @@ const cols = 'grid-template-columns:44px 1.2fr 1fr 90px 90px 100px'
     </section>
     <div class="flex flex-col gap-3.5 min-h-0">
       <section v-if="sel" aria-label="Selected player" class="bg-a-panel rounded-[14px] flex flex-col gap-3" style="padding:16px 18px;border:2px solid #FF7A1A">
-        <div class="flex items-center gap-3"><Avatar :avatar-key="sel.avatarKey" :size="44" /><div><div class="text-xl font-extrabold">{{ sel.name }}</div><div class="text-sm font-semibold text-a-muted">{{ sel.teamName }} · {{ sel.score.toLocaleString() }} pts · seen {{ seen(sel.lastSeenAt) }}</div></div></div>
-        <div class="grid grid-cols-2 gap-2">
+        <div class="flex items-center gap-3"><Avatar :avatar-key="sel.avatarKey" :size="44" /><div><div class="text-xl font-extrabold">{{ sel.name }}</div><div class="text-sm font-semibold text-a-muted"><template v-if="teams">{{ sel.teamName }} · </template>{{ sel.score.toLocaleString() }} pts · seen {{ seen(sel.lastSeenAt) }}</div></div></div>
+        <div class="grid gap-2" :class="teams ? 'grid-cols-2' : 'grid-cols-1'">
           <button class="a-btn" @click="rename">Rename</button>
-          <select class="a-input" aria-label="Move team" :value="sel.teamId ?? ''" style="background:#2A2F3B;border-color:transparent;font-weight:700;font-size:15px" @change="move"><option value="">Lone wolf</option><option v-for="t in s.teams" :key="t.id" :value="t.id">{{ t.name }}</option></select>
+          <select v-if="teams" class="a-input" aria-label="Move team" :value="sel.teamId ?? ''" style="background:#2A2F3B;border-color:transparent;font-weight:700;font-size:15px" @change="move"><option value="">Lone wolf</option><option v-for="t in s.teams" :key="t.id" :value="t.id">{{ t.name }}</option></select>
         </div>
         <div class="a-eyebrow" style="margin-top:2px">Adjust score</div>
         <div class="grid gap-2.5" style="grid-template-columns:120px 1fr">
@@ -66,7 +67,7 @@ const cols = 'grid-template-columns:44px 1.2fr 1fr 90px 90px 100px'
           <button class="a-btn danger" style="min-height:48px" @click="remove">Remove player…</button>
         </div>
       </section>
-      <section aria-label="Teams" class="bg-a-panel rounded-[14px] flex flex-col gap-1.5 flex-1 overflow-y-auto" style="padding:14px 16px">
+      <section v-if="teams" aria-label="Teams" class="bg-a-panel rounded-[14px] flex flex-col gap-1.5 flex-1 overflow-y-auto" style="padding:14px 16px">
         <div class="a-eyebrow">Teams</div>
         <div v-for="t in s.teams" :key="t.id" class="flex items-center gap-2.5 bg-a-raised rounded-[10px]" style="min-height:48px;padding:0 12px">
           <span class="rounded flex-none" style="width:16px;height:16px" :style="{ background: teamHex(t.colorKey) }" />

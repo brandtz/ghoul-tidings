@@ -1,8 +1,12 @@
-import { db, log, uid, type Player } from './db'
+import { db, log, teamsOn, uid, type Player } from './db'
 import { broadcast } from './bus'
 import { Conflict, NotFound, Validation } from './errors'
 import { currentRound } from './rounds'
 import { assignTeamCodes } from './codes'
+
+function assertTeamsOn() {
+  if (!teamsOn()) throw Conflict('Everyone plays solo tonight')
+}
 
 function assertBetweenRounds() {
   const r = currentRound()
@@ -12,7 +16,7 @@ function assertBetweenRounds() {
 export function createTeam(player: Player | null, input: { name: string; mascotKey: string; colorKey: string }) {
   const d = db()
   const live = d.teams.filter(t => !t.deletedAt)
-  if (player) assertBetweenRounds()
+  if (player) { assertTeamsOn(); assertBetweenRounds() }
   if (live.length >= d.party.settings.maxTeams) throw Conflict('All team slots are taken')
   if (live.some(t => t.name.toLowerCase() === input.name.trim().toLowerCase())) throw Conflict('That team name is taken')
   if (live.some(t => t.colorKey === input.colorKey)) throw Conflict('That color is taken')
@@ -28,6 +32,7 @@ export function createTeam(player: Player | null, input: { name: string; mascotK
 export function joinTeam(player: Player, teamId: string) {
   const d = db(); const t = d.teams.find(x => x.id === teamId && !x.deletedAt)
   if (!t) throw NotFound('Team not found')
+  assertTeamsOn()
   assertBetweenRounds()
   const size = d.players.filter(p => p.teamId === t.id && !p.removedAt).length
   if (size >= d.party.settings.teamCap) throw Conflict('That team is full')

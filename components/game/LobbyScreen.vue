@@ -13,7 +13,8 @@ const until = computed(() => {
   const time = [Math.floor(s / 3600) % 24, Math.floor(s / 60) % 60, s % 60].map(n => String(n).padStart(2, '0')).join(':')
   return { d, time, zero: ms === 0 }
 })
-const games = [['Holiday trivia', 'Four choices, ten seconds, faster pays more.'], ['Guess the Thing', 'A tight crop zooms out. Guess early for more.'], ['Two Truths and a Lie', 'Spot the lie. Fool your coworkers.']]
+const games = [['Holiday trivia', 'Four choices, ten seconds, faster pays more.'], ['Guess the Thing', 'A tight crop zooms out. Guess early for more.'], ['Meeting Bingo', 'Everyone gets a card. Dab your own, then call Bingo!']]
+const teams = computed(() => !!store.snap?.flags.teams)
 </script>
 
 <template>
@@ -27,14 +28,14 @@ const games = [['Holiday trivia', 'Four choices, ten seconds, faster pays more.'
     </div>
     <JoinCard v-if="stage" style="margin-top:30px" />
     <template v-else>
-      <TeamPanel />
+      <TeamPanel v-if="teams" />
       <div class="tile-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
         <div v-for="g in games" :key="g[0]" style="background:#10122A;border-radius:12px;padding:10px 14px">
           <div style="font-size:18px;font-weight:900">{{ g[0] }}</div>
           <div style="font-size:16px;font-weight:700;color:#B9B6D6;line-height:1.3">{{ g[1] }}</div>
         </div>
       </div>
-      <div style="font-size:17px;font-weight:700;color:#B9B6D6;text-align:center">A raffle runs all night. Every draw pushes Halloween closer to Christmas, and the top three players win gift cards.</div>
+      <div style="font-size:17px;font-weight:700;color:#B9B6D6;text-align:center">Gift card raffles run all party long, and winners keep their prize automatically. The top scorer and the best egg hunter win bigger gift cards at the finale.</div>
     </template>
   </div>
 </template>

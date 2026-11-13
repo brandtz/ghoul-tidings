@@ -8,15 +8,20 @@ const store = usePartyStore()
 const { toggle } = useCalm()
 const showBoard = ref(false)
 const showHint = ref(false)
-const showTtl = ref(false)
 const showReact = ref(false)
 const showBag = ref(false)
 const showBingo = ref(false)
 const showLegendary = ref(false)
 // Opens by itself the moment the code lands, not on later reloads. The host switch closes it.
 watch(() => store.me?.unlocks.legendary, (on, was) => { if (on && was === false) showLegendary.value = true })
-// Same for bingo: the card slides out the moment the code lands.
-watch(() => !!store.me?.bingoCard, (on, was) => { if (on && was === false) showBingo.value = true })
+// Same for bingo: the card slides out when the host opens bingo, unless the frame already shows it.
+watch(() => !!store.me?.bingoCard, (on, was) => { if (on && was === false && store.snap?.segment?.type !== 'bingo') showBingo.value = true })
+// Tell the player how the host's review went.
+watch(() => store.me?.bingoClaim, (now, was) => {
+  if (was !== 'pending') return
+  if (now === 'approved') store.toast('BINGO confirmed! Points added.', 'treat')
+  else if (now === 'rejected') store.toast('The host could not confirm that card. Keep playing.', 'trick')
+})
 const personal = computed(() => !props.stage && !props.thumb)
 const hasSeat = computed(() => !!store.me)
 
@@ -39,7 +44,6 @@ watch(() => store.effect, (e) => { if (e?.key === 'lightning') beat() })
   </template>
 
   <aside v-if="personal && hasSeat" class="rail rail-left" aria-label="Party actions">
-    <TruthsCard @open="showTtl = true" />
     <CodesHintCard @open="showHint = true" />
     <PowerUpCard />
     <BingoCard @open="showBingo = true" />
@@ -85,7 +89,6 @@ watch(() => store.effect, (e) => { if (e?.key === 'lightning') beat() })
   <HintModal v-if="showHint" @close="showHint = false" @bag="showHint = false; showBag = true" @bingo="showHint = false; showBingo = true" />
   <BagModal v-if="showBag" @close="showBag = false" />
   <BingoModal v-if="personal && showBingo && store.me?.bingoCard" @close="showBingo = false" />
-  <TtlDialog v-if="showTtl" @close="showTtl = false" />
   <LeaderboardDrawer v-if="showBoard" @close="showBoard = false" />
   <LegendaryModal v-if="personal && showLegendary && store.me?.unlocks.legendary" @close="showLegendary = false" />
 </template>

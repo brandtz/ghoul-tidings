@@ -1,6 +1,7 @@
 // Starter content so the whole show can be run on day one. All placeholder,
 // replaced from the admin panel or git-ignored files before the party.
 import { randomUUID } from 'node:crypto'
+import type { PrizeKind, PrizeTier } from '~~/shared/types'
 import type { DB, GuessItem, Segment, TriviaQ } from './db'
 import { defaultSettings } from './db'
 
@@ -36,15 +37,13 @@ const GUESSES: [string, string[], number, number, string][] = [
   ['Gingerbread man', ['gingerbread man', 'gingerbread cookie', 'gingerbread'], 0.5, 0.3, 'gingerbread'],
 ]
 
-const PRIZES: [string, 'swag' | 'special' | 'grand', string][] = [
-  ['Pumpkin spice gift basket', 'swag', 'Ships Friday'],
-  ['Cozy winter socks', 'swag', 'Pick up at desk'],
-  ['Coffee shop gift card', 'special', 'Digital delivery'],
-  ['Wireless earbuds', 'special', ''],
-  ['Board game bundle', 'swag', ''],
-  ['Extra PTO half day', 'special', 'Needs manager OK'],
-  ['Smart speaker', 'special', ''],
-  ['Grand prize', 'grand', 'Last draw'],
+// $150 budget for a 90 minute party: ten $10 random draws (one about every 8 minutes),
+// then two finale awards, $20 for most eggs found and $30 for best score.
+const RAFFLE_COUNT = 10
+const PRIZES: [string, PrizeTier, PrizeKind, string][] = [
+  ...Array.from({ length: RAFFLE_COUNT }, (): [string, PrizeTier, PrizeKind, string] => ['$10 gift card', 'swag', 'raffle', 'Random draw · emailed after the party']),
+  ['$20 gift card · Most eggs found', 'special', 'most_eggs', 'Finale award · emailed after the party'],
+  ['$30 gift card · Best score', 'grand', 'top_score', 'Finale award · emailed after the party'],
 ]
 
 export function buildSeed(): DB {
@@ -54,10 +53,9 @@ export function buildSeed(): DB {
     seg(1, 'intermission', 'Welcome intermission'),
     seg(2, 'trivia', 'Holiday Trivia'),
     seg(3, 'guess', 'Guess the Thing'),
-    seg(4, 'ttl', 'Two Truths and a Lie'),
-    seg(5, 'presentation', 'Recognition slides'),
-    seg(6, 'trivia', 'Holiday Trivia, round 2'),
-    seg(7, 'finale', 'Finale'),
+    seg(4, 'bingo', 'Meeting Bingo'),
+    seg(5, 'trivia', 'Holiday Trivia, round 2'),
+    seg(6, 'finale', 'Finale'),
   ]
   const toQ = (list: typeof TRIVIA, segmentId: string): TriviaQ[] => list.map((q, i) => ({
     id: id(), segmentId, sortOrder: i + 1, prompt: q[0], options: q[1], correctIndex: q[2], category: q[3], timeLimitS: 10,
@@ -70,19 +68,20 @@ export function buildSeed(): DB {
   return {
     party: {
       id: id(), slug: 'ghoul-tidings-2026', name: 'Ghoul Tidings', status: 'lobby', scheduledStart: start, startedAt: null,
-      durationMin: 60, pausedMs: 0, themeOverride: null, settings: defaultSettings(start),
+      durationMin: 90, pausedMs: 0, themeOverride: null, settings: defaultSettings(start),
       state: {
         segmentId: null, itemIndex: -1, roundId: null, doneSegments: [], scoringPaused: false, partyPaused: false, pausedAt: null,
         presentation: null, spirit: 0, spiritGoal: 600, hintRevealed: false, themeStep: 0, raffleDeferred: false, conductor: null,
+        bingo: { open: false, called: [] },
       },
       stateVersion: 1,
     },
     players: [], teams: [], segments,
-    trivia: [...toQ(TRIVIA, segments[1]!.id), ...toQ(TRIVIA2, segments[5]!.id)],
+    trivia: [...toQ(TRIVIA, segments[1]!.id), ...toQ(TRIVIA2, segments[4]!.id)],
     guess, ttl: [], rounds: [], answers: [], scoreEvents: [],
-    prizes: PRIZES.map((p, i) => ({ id: id(), sortOrder: i + 1, name: p[0], tier: p[1], notes: p[2], isMidnight: false, status: 'pending' as const })),
+    prizes: PRIZES.map((p, i) => ({ id: id(), sortOrder: i + 1, name: p[0], tier: p[1], kind: p[2], notes: p[3], isMidnight: false, status: 'pending' as const })),
     draws: [], presentations: [], log: [],
-    codes: [], redemptions: [], statusEffects: [], teamPowerups: {}, unlocks: {}, bingoClaimed: [], attemptTimes: {}, lastScoringCode: {}, missedAttempts: 0,
+    codes: [], redemptions: [], statusEffects: [], bingoClaims: [], teamPowerups: {}, unlocks: {}, bingoClaimed: [], attemptTimes: {}, lastScoringCode: {}, missedAttempts: 0,
     rate: {}, busLight: {},
   }
 }

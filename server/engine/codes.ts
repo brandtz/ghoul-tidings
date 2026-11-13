@@ -5,7 +5,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { useRuntimeConfig } from '#imports'
 import { COOLDOWN_MS, EGG_INDIVIDUAL_MAX, REWARDS, STEAL_MAX, normalizeCode, seededShuffle, tailsFor } from '~~/shared/phase2'
-import { db, log, uid, type CodeRow, type Player } from './db'
+import { db, log, teamOf, uid, type CodeRow, type Player } from './db'
 import { broadcast } from './bus'
 import { Validation } from './errors'
 import { activeEffect, applyScore } from './scores'
@@ -72,9 +72,10 @@ export function redeem(player: Player, tail: string) {
   const hashes = new Map(tailsFor(tail, live.map(c => c.codeLength)).map(t => [hashCode(t), t]))
   const code = live.find(c => hashes.has(c.codeHash))
   if (!code) { d.missedAttempts++; return nothing }
-  if (code.scope === 'solo' && player.teamId) return nothing
+  const teamId = teamOf(player)
+  if (code.scope === 'solo' && teamId) return nothing
 
-  if (d.redemptions.some(r => r.codeId === code.id && (r.playerId === player.id || (code.scope === 'team' && r.teamId === player.teamId && player.teamId)))) {
+  if (d.redemptions.some(r => r.codeId === code.id && (r.playerId === player.id || (code.scope === 'team' && r.teamId === teamId && teamId)))) {
     log('code', `${player.displayName} retried a used code: ${code.label}`, {}, player.displayName)
     return { outcome: 'duplicate', effects: [{ key: 'none', scope: 'personal', toast: 'Already in your bag.' }] }
   }
@@ -84,10 +85,10 @@ export function redeem(player: Player, tail: string) {
   if (scoring && now - (d.lastScoringCode[player.id] ?? 0) < COOLDOWN_MS) return { outcome: 'cooldown', effects: [{ key: 'none', scope: 'personal', toast: 'Your candy bucket needs a moment.' }] }
 
   const actionId = `code:${uid()}`
-  const row = { id: uid(), codeId: code.id, playerId: player.id, teamId: player.teamId, outcome: 'treat' as 'treat' | 'trick' | 'duplicate', scoreEventId: null as string | null, createdAt: now }
+  const row = { id: uid(), codeId: code.id, playerId: player.id, teamId, outcome: 'treat' as 'treat' | 'trick' | 'duplicate', scoreEventId: null as string | null, createdAt: now }
   const effects: any[] = []
 
-  if (code.scope === 'team' && code.ownerTeamId && code.ownerTeamId !== player.teamId) {
+  if (code.scope === 'team' && code.ownerTeamId && code.ownerTeamId !== teamId) {
     row.outcome = 'trick'
     const stolen = trick(player, code.ownerTeamId, code.id, actionId)
     d.redemptions.push(row)
@@ -99,7 +100,7 @@ export function redeem(player: Player, tail: string) {
   if (reward.team || reward.individual) {
     const room = Math.max(0, EGG_INDIVIDUAL_MAX - eggPoints(player.id))
     const ev = applyScore({
-      playerId: player.id, teamId: player.teamId, source: 'code', basePoints: player.teamId ? reward.team ?? 0 : 0, individualPoints: Math.min(room, reward.individual ?? 0),
+      playerId: player.id, teamId, source: 'code', basePoints: teamId ? reward.team ?? 0 : 0, individualPoints: Math.min(room, reward.individual ?? 0),
       refType: 'code', refId: code.id, idempotencyKey: `code:${code.id}:player:${player.id}`, actionId, actionLabel: `Code, ${player.displayName}`,
     })
     row.scoreEventId = ev?.id ?? null
@@ -122,11 +123,12 @@ export function redeem(player: Player, tail: string) {
 
 /** Moves points from the user's team to the owner's. Solo players and shields lose nothing. */
 function trick(player: Player, ownerTeamId: string, codeId: string, actionId: string) {
-  if (!player.teamId) return 0
-  if (activeEffect(player.teamId, 'shield')) { broadcast('ticker', { kind: 'steal', text: 'A Pumpkin Shield blocked a trick' }, { bump: false }); return 0 }
+  const teamId = teamOf(player)
+  if (!teamId) return 0
+  if (activeEffect(teamId, 'shield')) { broadcast('ticker', { kind: 'steal', text: 'A Pumpkin Shield blocked a trick' }, { bump: false }); return 0 }
   const amount = Math.min(STEAL_MAX, 100 + randomInt(0, 4) * 100)
   const base = { source: 'code' as const, individualPoints: 0, refType: 'code', refId: `${codeId}:${player.id}`, actionId, actionLabel: `Trick on ${player.displayName}` }
-  applyScore({ ...base, teamId: player.teamId, basePoints: -amount, idempotencyKey: `steal:${codeId}:${player.id}:debit` })
+  applyScore({ ...base, teamId, basePoints: -amount, idempotencyKey: `steal:${codeId}:${player.id}:debit` })
   applyScore({ ...base, teamId: ownerTeamId, basePoints: amount, idempotencyKey: `steal:${codeId}:${player.id}:credit` })
   broadcast('ticker', { kind: 'trick', text: 'A trick just moved points in the team race' }, { bump: false })
   broadcast('scores.updated', {})
@@ -135,10 +137,10 @@ function trick(player: Player, ownerTeamId: string, codeId: string, actionId: st
 
 /** The listed subset for this player's team, in that team's shuffled order. */
 export function bagFor(player: Player) {
-  const d = db()
-  const listed = d.codes.filter(c => c.listed && c.enabled && (c.scope !== 'team' || c.ownerTeamId === player.teamId) && (c.scope !== 'solo' || !player.teamId))
+  const d = db(); const teamId = teamOf(player)
+  const listed = d.codes.filter(c => c.listed && c.enabled && (c.scope !== 'team' || c.ownerTeamId === teamId) && (c.scope !== 'solo' || !teamId))
   const used = new Set(d.redemptions.filter(r => r.playerId === player.id).map(r => r.codeId))
-  return seededShuffle(listed, player.teamId ?? player.id).map((c, i) => (i % 5 === 4
+  return seededShuffle(listed, teamId ?? player.id).map((c, i) => (i % 5 === 4
     ? { smudged: true, used: false }
     : { code: c.display, hint: REWARDS[c.rewardKey]!.kind === 'neutral' ? 'Curious' : 'Treat', used: used.has(c.id), smudged: false }))
 }

@@ -4,7 +4,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import type { PrizeTier, RoundPhase, ItemType, SegmentType } from '~~/shared/types'
+import type { BingoClaimStatus, PrizeKind, PrizeTier, RoundPhase, ItemType, SegmentType } from '~~/shared/types'
 import { DEFAULT_CAPS } from '~~/shared/scoring'
 import { DEFAULT_BINGO_SQUARES } from '~~/shared/phase2'
 import { buildSeed } from './seed'
@@ -19,12 +19,11 @@ export interface Settings {
   maxTeams: number
   soloMultiplier: number
   caps: Record<string, number>
-  points: { triviaBase: number; ttlParticipation: number; ttlSpot: number; ttlFool: number; ttlFoolMax: number }
+  points: { triviaBase: number; ttlParticipation: number; ttlSpot: number; ttlFool: number; ttlFoolMax: number; bingo: number; bingoFirst: number }
   ttlOpensAt: number
   ttlClosesAt: number
   noRepeatWinners: boolean
   presenceMin: number
-  claimS: number
   spiritGoal: number
   hostSound: { chime: boolean; sting: boolean }
   flags: Record<string, boolean>
@@ -45,6 +44,8 @@ export interface LiveState {
   themeStep: number
   raffleDeferred: boolean
   conductor: { id: string; at: number } | null
+  /** Opens when the bingo segment starts and stays open until the host closes it. */
+  bingo: { open: boolean; called: string[] }
 }
 export interface Party {
   id: string; slug: string; name: string; status: 'draft' | 'lobby' | 'live' | 'ended'
@@ -60,8 +61,10 @@ export interface TtlSubmission { id: string; playerId: string; statements: strin
 export interface Round { id: string; segmentId: string; itemType: ItemType; itemId: string; phase: RoundPhase; opensAt: number; locksAt: number; revealedAt: number | null; displayOrder: number[]; revealData?: any }
 export interface Answer { id: string; roundId: string; playerId: string; payload: { choice?: number; text?: string }; submittedAt: number; zoomStep?: number; isCorrect?: boolean; selfMark?: boolean; points?: number; bonus?: number }
 export interface ScoreEvent { id: string; playerId: string | null; teamId: string | null; deltaIndividual: number; deltaTeam: number; source: string; refType: string; refId: string; idempotencyKey: string; reason?: string; createdBy?: string; reversesId?: string; actionId?: string; actionLabel?: string; createdAt: number }
-export interface Prize { id: string; sortOrder: number; name: string; tier: PrizeTier; notes: string; isMidnight: boolean; status: 'pending' | 'drawn' | 'claimed' | 'skipped' }
-export interface RaffleDraw { id: string; prizeId: string; playerId: string; eligibleCount: number; drawnAt: number; claimDeadline: number; status: 'offered' | 'claimed' | 'expired' | 'redrawn' }
+export interface Prize { id: string; sortOrder: number; name: string; tier: PrizeTier; kind: PrizeKind; notes: string; isMidnight: boolean; status: 'pending' | 'drawn' | 'claimed' | 'skipped' }
+/** A drawn winner gets the prize straight away (status 'claimed'). 'offered' and 'expired' only exist in data saved before claim windows were removed. */
+export interface RaffleDraw { id: string; prizeId: string; playerId: string; eligibleCount: number; drawnAt: number; claimDeadline?: number; status: 'offered' | 'claimed' | 'expired' | 'redrawn' }
+export interface BingoClaim { id: string; playerId: string; card: string[]; marked: number[]; status: BingoClaimStatus; createdAt: number; reviewedAt: number | null }
 export interface Presentation { id: string; title: string; pdfPath: string; pageCount: number }
 export interface CodeRow { id: string; codeHash: string; codeLength: number; scope: 'universal' | 'team' | 'secret' | 'solo'; ownerTeamId: string | null; rewardKey: string; listed: boolean; enabled: boolean; label: string; display: string | null }
 export interface CodeRedemption { id: string; codeId: string; playerId: string; teamId: string | null; outcome: 'treat' | 'trick' | 'duplicate'; scoreEventId: string | null; createdAt: number }
@@ -73,7 +76,7 @@ export interface DB {
   players: Player[]; teams: Team[]; segments: Segment[]; trivia: TriviaQ[]; guess: GuessItem[]
   ttl: TtlSubmission[]; rounds: Round[]; answers: Answer[]; scoreEvents: ScoreEvent[]
   prizes: Prize[]; draws: RaffleDraw[]; presentations: Presentation[]; log: LogEvent[]
-  codes: CodeRow[]; redemptions: CodeRedemption[]; statusEffects: StatusEffect[]
+  codes: CodeRow[]; redemptions: CodeRedemption[]; statusEffects: StatusEffect[]; bingoClaims: BingoClaim[]
   teamPowerups: Record<string, string>; unlocks: Record<string, string[]>; bingoClaimed: string[]
   attemptTimes: Record<string, number[]>; lastScoringCode: Record<string, number>; missedAttempts: number
   rate: Record<string, { minute: number; count: number }>; busLight: Record<string, number>
@@ -84,11 +87,24 @@ const g = globalThis as any
 
 /** Fills fields that older saved data predates. */
 export function normalize(d: any): DB {
-  Object.assign(d, { codes: [], redemptions: [], statusEffects: [], teamPowerups: {}, unlocks: {}, bingoClaimed: [], attemptTimes: {}, lastScoringCode: {}, missedAttempts: 0, rate: {}, busLight: {}, ...d })
-  d.party.settings.caps = { ...DEFAULT_CAPS, ...d.party.settings.caps }
-  d.party.settings.bingoSquares ??= [...DEFAULT_BINGO_SQUARES]
+  Object.assign(d, { codes: [], redemptions: [], statusEffects: [], bingoClaims: [], teamPowerups: {}, unlocks: {}, bingoClaimed: [], attemptTimes: {}, lastScoringCode: {}, missedAttempts: 0, rate: {}, busLight: {}, ...d })
+  const s = d.party.settings
+  s.caps = { ...DEFAULT_CAPS, ...s.caps }
+  s.bingoSquares ??= [...DEFAULT_BINGO_SQUARES]
+  s.points.bingo ??= 1000
+  s.points.bingoFirst ??= 500
+  s.flags.teams ??= false
+  d.party.state.bingo ??= { open: false, called: [] }
+  for (const p of d.prizes) p.kind ??= 'raffle'
+  // Winners keep their prize now. Older saved offers count as won.
+  for (const r of d.draws) if (r.status === 'offered') r.status = 'claimed'
+  for (const p of d.prizes) if (p.status === 'drawn') p.status = 'claimed'
   return d
 }
+
+/** Teams are an opt-in setting. With them off, everyone plays solo whatever team they once joined. */
+export const teamsOn = () => !!db().party.settings.flags.teams
+export const teamOf = (p: { teamId: string | null }) => (teamsOn() ? p.teamId : null)
 
 export function db(): DB {
   if (g.__gtPg) {
@@ -130,14 +146,13 @@ export const defaultSettings = (start: number): Settings => ({
   maxTeams: 10,
   soloMultiplier: 1.5,
   caps: { ...DEFAULT_CAPS },
-  points: { triviaBase: 1000, ttlParticipation: 750, ttlSpot: 500, ttlFool: 100, ttlFoolMax: 2000 },
+  points: { triviaBase: 1000, ttlParticipation: 750, ttlSpot: 500, ttlFool: 100, ttlFoolMax: 2000, bingo: 1000, bingoFirst: 500 },
   ttlOpensAt: Date.now() - 3600_000,
   ttlClosesAt: start + 15 * 60000,
   noRepeatWinners: true,
   presenceMin: 3,
-  claimS: 45,
   spiritGoal: 600,
   hostSound: { chime: false, sting: false },
-  flags: { eggs: false, powerups: false, cheatSheet: false, bingo: false, eggHunt: false, legendary: false },
+  flags: { teams: false, eggs: false, powerups: false, cheatSheet: false, bingo: false, eggHunt: false, legendary: false },
   bingoSquares: [...DEFAULT_BINGO_SQUARES],
 })

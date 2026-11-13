@@ -2,14 +2,17 @@
 import { runPipeline, type ScoreCommand } from '~~/shared/scoring'
 import type { BoardRow, TeamRow } from '~~/shared/types'
 import { trackPosition } from '~~/shared/scoring'
-import { db, log, uid } from './db'
+import { db, log, teamsOn, uid } from './db'
 
 export function applyScore(cmd: ScoreCommand) {
   const d = db()
   const prior = d.scoreEvents.find(e => e.idempotencyKey === cmd.idempotencyKey)
   if (prior) return prior
   const { settings, state } = d.party
-  const r = runPipeline(cmd, { scoringPaused: state.scoringPaused, teamFrozen: !!cmd.teamId && !!activeEffect(cmd.teamId, 'frozen'), settings: { soloMultiplier: settings.soloMultiplier, caps: settings.caps } })
+  // With teams off nobody is on a team, so there is no team race and no solo bonus.
+  const teams = teamsOn()
+  if (!teams) cmd = { ...cmd, teamId: null }
+  const r = runPipeline(cmd, { scoringPaused: state.scoringPaused, teamFrozen: !!cmd.teamId && !!activeEffect(cmd.teamId, 'frozen'), settings: { soloMultiplier: teams ? settings.soloMultiplier : 1, caps: settings.caps } })
   if ('reject' in r) return null
   const ev = {
     id: uid(), playerId: r.playerId ?? null, teamId: r.teamId ?? null, deltaIndividual: r.deltaIndividual, deltaTeam: r.deltaTeam,
@@ -50,7 +53,7 @@ export function teamTotals() {
 /** Individual board. Excludes removed players and the host. Ties share a rank. */
 export function board(): BoardRow[] {
   const d = db(); const totals = playerTotals()
-  const teamName = (id: string | null) => d.teams.find(t => t.id === id)?.name ?? null
+  const teamName = (id: string | null) => (teamsOn() ? d.teams.find(t => t.id === id)?.name ?? null : null)
   const rows = d.players.filter(p => !p.removedAt && !p.isHost)
     .map(p => ({ id: p.id, name: p.displayName, avatarKey: p.avatarKey, score: totals.get(p.id) ?? 0, rank: 0, teamName: teamName(p.teamId) }))
     .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
